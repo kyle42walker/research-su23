@@ -53,7 +53,7 @@ const edges = {
 }
 </style> -->
 
-<script setup lang="ts">
+<!-- <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import * as vNG from 'v-network-graph'
 import data from './data'
@@ -73,8 +73,6 @@ const zoomLevel = ref(1.5)
 
 <template>
   <div class="demo-control-panel">
-    <!-- <input type="checkbox" id="checkbox" v-model="configs.view.scalingObjects" />
-                          <label for="Scaling objects">{{ configs.view.scalingObjects }}</label> -->
     <PrimeCheckbox v-model="configs.view.scalingObjects" :binary="true" />
     <label for="Scaling objects">{{ configs.view.scalingObjects }}</label>
     <PrimeSlider v-model="zoomLevel" class="w-1000rem" />
@@ -82,4 +80,40 @@ const zoomLevel = ref(1.5)
 
   <v-network-graph v-model:zoom-level="zoomLevel" :nodes="data.nodes" :edges="data.edges" :layouts="data.layouts"
     :configs="configs" />
+</template> -->
+
+<script setup lang="ts">
+import * as vNG from 'v-network-graph'
+import data from './data'
+
+const paths: vNG.Paths = {
+  path1: { test: true, edges: ['edge1', 'edge3', 'edge5', 'edge7'] },
+  path2: { test: false, edges: ['edge2', 'edge4', 'edge6', 'edge10'] }
+}
+
+const configs = vNG.defineConfigs({
+  node: {
+    normal: { type: 'circle', radius: 20, color: '#99ccff' },
+    hover: { color: '#88bbff' },
+    label: { visible: false, fontSize: 8 }
+  },
+  edge: {
+    gap: 12,
+    normal: { color: '#6699cc' }
+  },
+  path: {
+    visible: true,
+    normal: {
+      color: path => path.test ? '#6699cc' : '#000000',
+      width: 10,
+      dasharray: '10 16',
+      animate: true,
+      animationSpeed: path => path.test ? -40 : 40
+    }
+  }
+})
+</script>
+
+<template>
+  <v-network-graph :nodes="data.nodes" :edges="data.edges" :layouts="data.layouts" :paths="paths" :configs="configs" />
 </template>
