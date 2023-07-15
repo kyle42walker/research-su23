@@ -84,12 +84,17 @@ const zoomLevel = ref(1.5)
 
 <script setup lang="ts">
 import * as vNG from 'v-network-graph'
-import data from './data'
+// import data from './data'
+import { Model, GraphType, LayoutType } from './model_v5'
 
-const paths: vNG.Paths = {
-  path1: { test: true, edges: ['edge1', 'edge3', 'edge5', 'edge7'] },
-  path2: { test: false, edges: ['edge2', 'edge4', 'edge6', 'edge10'] }
-}
+const m = new Model()
+m.CreateNewGraph(GraphType.ErdosRenyiRandomGraph, LayoutType.Random, 1000, true, false)
+const data = m.GetData()
+
+// const paths: vNG.Paths = {
+//   path1: { test: true, edges: ['edge1', 'edge3', 'edge5', 'edge7'] },
+//   path2: { test: false, edges: ['edge2', 'edge4', 'edge6', 'edge10'] }
+// }
 
 const configs = vNG.defineConfigs({
   node: {
@@ -115,5 +120,12 @@ const configs = vNG.defineConfigs({
 </script>
 
 <template>
-  <v-network-graph :nodes="data.nodes" :edges="data.edges" :layouts="data.layouts" :paths="paths" :configs="configs" />
+  <v-network-graph class=graph :nodes="data.nodes" :edges="data.edges" :layouts="data.layouts" :configs="configs" />
 </template>
+<style>
+.graph {
+  width: 1000px;
+  height: 1000px;
+  border: 1px solid #000;
+}
+</style>
