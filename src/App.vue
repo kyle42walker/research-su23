@@ -87,14 +87,15 @@ import * as vNG from 'v-network-graph'
 // import data from './data'
 import { Model, GraphType, LayoutType } from './model_v5'
 
-const m = new Model()
-m.CreateNewGraph(GraphType.ErdosRenyiRandomGraph, LayoutType.Random, 1000, true, false)
-const data = m.GetData()
+const numberOfNodes = 5
+const graphWidth = 1000
+const graphHeight = 1000
+const isDirected = false
+const allowSelfLoops = false
 
-// const paths: vNG.Paths = {
-//   path1: { test: true, edges: ['edge1', 'edge3', 'edge5', 'edge7'] },
-//   path2: { test: false, edges: ['edge2', 'edge4', 'edge6', 'edge10'] }
-// }
+const m = new Model(graphWidth, graphHeight)
+m.CreateNewGraph(GraphType.Tree, LayoutType.Circular, numberOfNodes, isDirected, allowSelfLoops)
+const data = m.GetData()
 
 const configs = vNG.defineConfigs({
   node: {
@@ -104,7 +105,8 @@ const configs = vNG.defineConfigs({
   },
   edge: {
     gap: 12,
-    normal: { color: '#6699cc' }
+    normal: { color: '#6699cc' },
+    marker: { target: { type: 'none' } }
   },
   path: {
     visible: true,
@@ -117,15 +119,15 @@ const configs = vNG.defineConfigs({
     }
   }
 })
+if (isDirected) { configs.edge.marker.target.type = 'arrow' }
 </script>
 
 <template>
-  <v-network-graph class=graph :nodes="data.nodes" :edges="data.edges" :layouts="data.layouts" :configs="configs" />
+  <v-network-graph class=graph :nodes="data.nodes" :edges="data.edges" :layouts="data.layouts" :configs="configs"
+    :style="{width: graphWidth + 'px', height: graphHeight + 'px'}" />
 </template>
 <style>
 .graph {
-  width: 1000px;
-  height: 1000px;
   border: 1px solid #000;
 }
 </style>
