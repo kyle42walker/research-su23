@@ -33,7 +33,8 @@ class Graph {
   edges: Edges = {}
   isDirected: boolean
 
-  private nodeCount = 0
+  private nodeIdCount = 0
+  private edgeIdCount = 0
 
   constructor (isDirected = false) {
     this.isDirected = isDirected
@@ -41,25 +42,21 @@ class Graph {
 
   // Time complexity: O(1)
   AddNode (weight = 1) {
-    const id = (this.nodeCount++).toString()
-    this.nodes[id] = { name: id, weight: weight }
+    const id = (this.nodeIdCount++).toString()
+    this.nodes[id] = { name: id, weight: weight, ports: new Array<string>() }
   }
 
   // Time complexity: O(1)
   AddEdge (sourceId: string, targetId: string, weight = 1) {
-    this.edges[`edge-${sourceId}-${targetId}`] = {
+    const edgeId = (this.edgeIdCount++).toString()
+    this.edges[edgeId] = {
       source: sourceId.toString(),
       target: targetId.toString(),
       weight: weight
     }
 
-    // if (this.isDirected || sourceId === targetId) { return }
-
-    // this.edges[`edge-${targetId}-${sourceId}`] = {
-    //   source: targetId.toString(),
-    //   target: sourceId.toString(),
-    //   weight: weight
-    // }
+    this.nodes[sourceId].ports.push(edgeId)
+    this.nodes[targetId].ports.push(edgeId)
   }
 
   // Time complexity: O(1)
@@ -67,23 +64,17 @@ class Graph {
     delete this.nodes[nodeId]
   }
 
-  // Time complexity: O(1)
+  // Time complexity: O(|D|)
   RemoveEdge (edgeId: string) {
     delete this.edges[edgeId]
 
-    // if (this.isDirected) { return }
-
-    // const [sourceId, targetId] = edgeId.split('-').slice(1)
-    // delete this.edges[`edge-${targetId}-${sourceId}`]
-  }
-
-  // Time complexity: O(1)
-  RemoveEdgeBetweenNodes (sourceId: string, targetId: string) {
-    this.RemoveEdge(`edge-${sourceId}-${targetId}`)
-
-    // if (this.isDirected || sourceId === targetId) { return }
-
-    // this.RemoveEdge(`edge-${targetId}-${sourceId}`)
+    // Remove the edge from the port lists of the source and target nodes
+    const sourceId = this.edges[edgeId].source
+    const targetId = this.edges[edgeId].target
+    this.nodes[sourceId].ports = this.nodes[sourceId].ports.filter(
+      (portEdgeId: string) => portEdgeId !== edgeId)
+    this.nodes[targetId].ports = this.nodes[targetId].ports.filter(
+      (portEdgeId: string) => portEdgeId !== edgeId)
   }
 
   // Time complexity: O(1)
@@ -94,34 +85,45 @@ class Graph {
   // Time complexity: O(1)
   SetEdgeWeight (edgeId: string, weight: number) {
     this.edges[edgeId].weight = weight
-
-    // if (this.isDirected) { return }
-
-    // const [sourceId, targetId] = edgeId.split('-').slice(1)
-    // this.edges[`edge-${targetId}-${sourceId}`].weight = weight
   }
 
-  // Time complexity: O(|E|)
+  // Time complexity: O(|D|)
   GetAdjacentNodes (nodeId: string): string[] {
     const adjacentNodes: string[] = []
 
-    Object.values(this.edges).forEach((edge) => {
-      if (edge.source === nodeId) { adjacentNodes.push(edge.target) }
-      if (!this.isDirected && edge.target === nodeId) { adjacentNodes.push(edge.source) }
+    this.GetPorts(nodeId).forEach((portEdgeId: string) => {
+      const sourceId = this.edges[portEdgeId].source
+      const targetId = this.edges[portEdgeId].target
+      if (sourceId === nodeId) { adjacentNodes.push(targetId) }
+      if (!this.isDirected && targetId === nodeId) { adjacentNodes.push(sourceId) }
     })
 
     return adjacentNodes
   }
 
   // Time complexity: O(1)
+  // Ports are the edge ids of incident edges
+  GetPorts (nodeId: string): string[] {
+    return this.nodes[nodeId].ports
+  }
+
+  // Time complexity: O(|E|)
+  // sourceId and targetId are node ids
   EdgeExists (sourceId: string, targetId: string): boolean {
-    // return Object.hasOwnProperty.call(this.edges, `edge-${nodeId1}-${nodeId2}`)
-    return (this.edges[`edge-${sourceId}-${targetId}`] !== undefined) || (!this.isDirected && (this.edges[`edge-${targetId}-${sourceId}`] !== undefined))
+    return this.nodes[sourceId].ports.some((portEdgeId: string) => {
+      const edge = this.edges[portEdgeId]
+      return edge.source === sourceId && edge.target === targetId
+    })
+  }
+
+  // Time complexity: O(1)
+  GetNodeCount (): number {
+    return Object.keys(this.nodes).length
   }
 
   // Time complexity: O(|V| + |E|)
   IsConnected (): boolean {
-    const visited: boolean[] = new Array(Object.keys(this.nodes).length).fill(false)
+    const visited: boolean[] = new Array(this.GetNodeCount()).fill(false)
     const queue: string[] = []
 
     // Pick a random node
@@ -145,50 +147,50 @@ class Graph {
   }
 }
 
-class Robot {
-  // TODO: this should have a queue
-  BreadthFirstSearch (graph: Graph, startNode: string, endNode: string): string[] {
-    const numberOfNodes = Object.keys(graph.nodes).length
-    const visited: boolean[] = new Array(numberOfNodes).fill(false)
-    const path: string[] = []
+// class Robot {
+//   // TODO: this should have a queue
+//   BreadthFirstSearch (graph: Graph, startNode: string, endNode: string): string[] {
+//     const numberOfNodes = Object.keys(graph.nodes).length
+//     const visited: boolean[] = new Array(numberOfNodes).fill(false)
+//     const path: string[] = []
 
-    path.push(startNode)
+//     path.push(startNode)
 
-    for (let i = 0; i < numberOfNodes; i++) {
-      const currentNode = path[i]
-      visited[parseInt(currentNode)] = true
+//     for (let i = 0; i < numberOfNodes; i++) {
+//       const currentNode = path[i]
+//       visited[parseInt(currentNode)] = true
 
-      if (currentNode === endNode) { break }
+//       if (currentNode === endNode) { break }
 
-      // Add all adjacent nodes to the path
-      graph.GetAdjacentNodes(currentNode).forEach((adjacentNode) => {
-        if (!visited[parseInt(adjacentNode)]) {
-          path.push(adjacentNode)
-        }
-      })
-    }
+//       // Add all adjacent nodes to the path
+//       graph.GetAdjacentNodes(currentNode).forEach((adjacentNode) => {
+//         if (!visited[parseInt(adjacentNode)]) {
+//           path.push(adjacentNode)
+//         }
+//       })
+//     }
 
-    return path
-  }
+//     return path
+//   }
 
-  // TODO: finish this
-  RandomWander (graph: Graph, startNode: string, numberOfSteps: number): string[] {
-    const path: string[] = []
+//   // TODO: finish this
+//   RandomWander (graph: Graph, startNode: string, numberOfSteps: number): string[] {
+//     const path: string[] = []
 
-    path.push(startNode)
+//     path.push(startNode)
 
-    for (let i = 0; i < numberOfSteps; i++) {
-      const currentNode = path[i]
+//     for (let i = 0; i < numberOfSteps; i++) {
+//       const currentNode = path[i]
 
-      // Add a random adjacent node to the path
-      const adjacentNodes = graph.GetAdjacentNodes(currentNode)
-      const randomAdjacentNode = adjacentNodes[Math.floor(Math.random() * adjacentNodes.length)]
-      path.push(randomAdjacentNode)
-    }
+//       // Add a random adjacent node to the path
+//       const adjacentNodes = graph.GetAdjacentNodes(currentNode)
+//       const randomAdjacentNode = adjacentNodes[Math.floor(Math.random() * adjacentNodes.length)]
+//       path.push(randomAdjacentNode)
+//     }
 
-    return path
-  }
-}
+//     return path
+//   }
+// }
 
 class GraphGenerator {
   static GenerateErdosRenyiRandomGraph (n: number, p: number, isDirected = false, allowSelfLoops = false, requireConnected = false, maxNumberOfAttempts = 5): Graph {
@@ -337,7 +339,7 @@ class LayoutGenerator {
     return layouts
   }
 
-  static GenerateLinearLayout (graph: Graph, width: number, height: number): Layouts {
+  static GenerateLinearHorizontalLayout (graph: Graph, width: number): Layouts {
     const layouts: Layouts = {
       nodes: {}
     }
@@ -398,7 +400,7 @@ export class Model {
 
     switch (graphType) {
       case GraphType.ErdosRenyiRandomGraph:
-        graph = GraphGenerator.GenerateErdosRenyiRandomGraph(numberOfNodes, 0.3, isDirected, allowSelfLoops, true, 50)
+        graph = GraphGenerator.GenerateErdosRenyiRandomGraph(numberOfNodes, 0.1, isDirected, allowSelfLoops, true, 50)
         break
       case GraphType.Path:
         graph = GraphGenerator.GeneratePath(numberOfNodes, isDirected)
@@ -415,7 +417,6 @@ export class Model {
       default:
         throw new Error('Invalid graph type')
     }
-    console.log(graph.IsConnected())
 
     switch (layoutType) {
       case LayoutType.Random:
@@ -425,7 +426,7 @@ export class Model {
         layouts = LayoutGenerator.GenerateCircularLayout(graph, this.windowWidth, this.windowHeight)
         break
       case LayoutType.Linear:
-        layouts = LayoutGenerator.GenerateLinearLayout(graph, this.windowWidth, this.windowHeight)
+        layouts = LayoutGenerator.GenerateLinearHorizontalLayout(graph, this.windowWidth)
         break
       default:
         throw new Error('Invalid layout type')

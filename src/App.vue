@@ -87,14 +87,14 @@ import * as vNG from 'v-network-graph'
 // import data from './data'
 import { Model, GraphType, LayoutType } from './model_v5'
 
-const numberOfNodes = 5
+const numberOfNodes = 15
 const graphWidth = 1000
 const graphHeight = 1000
 const isDirected = false
 const allowSelfLoops = false
 
 const m = new Model(graphWidth, graphHeight)
-m.CreateNewGraph(GraphType.Tree, LayoutType.Circular, numberOfNodes, isDirected, allowSelfLoops)
+m.CreateNewGraph(GraphType.ErdosRenyiRandomGraph, LayoutType.Circular, numberOfNodes, isDirected, allowSelfLoops)
 const data = m.GetData()
 
 const configs = vNG.defineConfigs({

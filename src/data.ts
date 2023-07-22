@@ -1,5 +1,12 @@
 import { Nodes, Edges, Layouts } from 'v-network-graph'
 
+// const nodes: Nodes = {
+//   node1: { name: 'Node 1', ports: ['e1']},
+// }
+// const edges: Edges = {
+//   e1: { source: 'node1', target: 'node2'},
+// }
+
 const nodes: Nodes = {
   node1: { name: 'Node 1' },
   node2: { name: 'Node 2' },
@@ -15,7 +22,7 @@ const nodes: Nodes = {
 
 const edges: Edges = {
   edge1: { source: 'node2', target: 'node1' },
-  edge2: { source: 'node3', target: 'node2' },
+  edge2: { source: 'node3', target: 'node2', weight: 1, sourcePort: 0, targetPort: 1 },
   edge3: { source: 'node2', target: 'node4' },
   edge4: { source: 'node2', target: 'node4' },
   edge5: { source: 'node5', target: 'node4' },
