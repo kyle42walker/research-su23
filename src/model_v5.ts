@@ -26,7 +26,7 @@ import { Nodes, Edges, Layouts } from 'v-network-graph'
 // }
 
 export enum GraphType { ErdosRenyiRandomGraph, Path, Cycle, Tree, CompleteGraph }
-export enum LayoutType { Random, Circular, Linear, Tree, ForceDirected }
+export enum LayoutType { Random, Circular, LinearHorizontal, LinearVertical, Tree, ForceDirected }
 
 class Graph {
   nodes: Nodes = {}
@@ -38,6 +38,10 @@ class Graph {
 
   constructor (isDirected = false) {
     this.isDirected = isDirected
+  }
+
+  GetNodeIds (): string[] {
+    return Object.keys(this.nodes)
   }
 
   // Time complexity: O(1)
@@ -307,7 +311,7 @@ class LayoutGenerator {
       nodes: {}
     }
 
-    Object.keys(graph.nodes).forEach((nodeId) => {
+    graph.GetNodeIds().forEach((nodeId) => {
       layouts.nodes[nodeId] = {
         x: Math.random() * width,
         y: Math.random() * height
@@ -324,11 +328,10 @@ class LayoutGenerator {
 
     const radius = Math.min(width, height) / 2 * 0.9
 
-    const nodeCount = Object.keys(graph.nodes).length
-    const angleStep = 2 * Math.PI / nodeCount
+    const angleStep = 2 * Math.PI / graph.GetNodeCount()
 
     let angle = 0
-    Object.keys(graph.nodes).forEach((nodeId) => {
+    graph.GetNodeIds().forEach((nodeId) => {
       layouts.nodes[nodeId] = {
         x: radius * Math.cos(angle),
         y: radius * Math.sin(angle)
@@ -344,16 +347,34 @@ class LayoutGenerator {
       nodes: {}
     }
 
-    const nodeCount = Object.keys(graph.nodes).length
-    const xStep = width / nodeCount
+    const xStep = width / graph.GetNodeCount()
 
     let x = 0
-    Object.keys(graph.nodes).forEach((nodeId) => {
+    graph.GetNodeIds().forEach((nodeId) => {
       layouts.nodes[nodeId] = {
         x: x,
         y: 0
       }
       x += xStep
+    })
+
+    return layouts
+  }
+
+  static GenerateLinearVerticalLayout (graph: Graph, height: number): Layouts {
+    const layouts: Layouts = {
+      nodes: {}
+    }
+
+    const yStep = height / graph.GetNodeCount()
+
+    let y = 0
+    graph.GetNodeIds().forEach((nodeId) => {
+      layouts.nodes[nodeId] = {
+        x: 0,
+        y: y
+      }
+      y += yStep
     })
 
     return layouts
@@ -425,8 +446,11 @@ export class Model {
       case LayoutType.Circular:
         layouts = LayoutGenerator.GenerateCircularLayout(graph, this.windowWidth, this.windowHeight)
         break
-      case LayoutType.Linear:
+      case LayoutType.LinearHorizontal:
         layouts = LayoutGenerator.GenerateLinearHorizontalLayout(graph, this.windowWidth)
+        break
+      case LayoutType.LinearVertical:
+        layouts = LayoutGenerator.GenerateLinearVerticalLayout(graph, this.windowHeight)
         break
       default:
         throw new Error('Invalid layout type')
