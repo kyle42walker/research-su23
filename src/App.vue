@@ -94,7 +94,7 @@ const isDirected = false
 const allowSelfLoops = false
 
 const m = new Model(graphWidth, graphHeight)
-m.CreateNewGraph(GraphType.ErdosRenyiRandomGraph, LayoutType.LinearVertical, numberOfNodes, isDirected, allowSelfLoops)
+m.CreateNewGraph(GraphType.Tree, LayoutType.Circular, numberOfNodes, isDirected, allowSelfLoops)
 const data = m.GetData()
 
 const configs = vNG.defineConfigs({

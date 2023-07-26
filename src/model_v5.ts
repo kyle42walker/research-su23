@@ -26,7 +26,7 @@ import { Nodes, Edges, Layouts } from 'v-network-graph'
 // }
 
 export enum GraphType { ErdosRenyiRandomGraph, Path, Cycle, Tree, CompleteGraph }
-export enum LayoutType { Random, Circular, LinearHorizontal, LinearVertical, Tree, ForceDirected }
+export enum LayoutType { Random, Circular, LinearHorizontal, LinearVertical, TreeHorizontal, ForceDirected }
 
 class Graph {
   nodes: Nodes = {}
@@ -124,6 +124,37 @@ class Graph {
   GetNodeCount (): number {
     return Object.keys(this.nodes).length
   }
+
+  GetNodeDepth (nodeId: string): number {
+    const visited: boolean[] = new Array(this.GetNodeCount()).fill(false)
+    const queue: string[] = []
+
+    // Assume first node is root
+    const startNode = Object.keys(this.nodes)[0]
+    queue.push(startNode)
+
+    // BFS
+    let depth = 0
+    while (queue.length > 0) {
+      const currentNode = queue.shift() as string
+      visited[parseInt(currentNode)] = true
+      
+      // Add all adjacent nodes to the queue
+      this.GetAdjacentNodes(currentNode).forEach((adjacentNode) => {
+        if (!visited[parseInt(adjacentNode)]) {
+          queue.push(adjacentNode)
+        }
+      })
+
+      if (currentNode === nodeId) {
+        return depth
+      }
+      depth++
+    }
+
+    return -1
+  }
+
 
   // Time complexity: O(|V| + |E|)
   IsConnected (): boolean {
@@ -380,15 +411,31 @@ class LayoutGenerator {
     return layouts
   }
 
-  // static GenerateTreeLayout (graph: Graph, width: number, height: number): Layouts {
-  //   const layouts: Layouts = {
-  //     nodes: {}
-  //   }
+  // Layout the graph in a tree-like structure
+  // The root is placed on the top left
+  // The deepest node is placed on the top right
+  // The algorithm starts with the deepest node,
+  // and moves up the tree
+  static GenerateTreeHorizontalLayout (graph: Graph, width: number, height: number): Layouts {
+    const layouts: Layouts = {
+      nodes: {}
+    }
 
-  //   const layer1 = graph.GetAdjacentNodes('0').length
+    // Find the deepest node and its depth
+    let deepestNode: string, depth = 0
+    graph.GetNodeIds().forEach((nodeId) => {
+      const nodeDepth = graph.GetNodeDepth(nodeId)
+      if (nodeDepth > depth) {
+        deepestNode = nodeId
+        depth = nodeDepth
+      }
+    })
 
-  //   return layouts
-  // }
+    // Get the parent of the deepest node
+    
+
+    return layouts
+  }
 
   // static GenerateForceDirectedLayout(graph: Graph, width: number, height: number): Layouts {
   //   // Set initial positions randomly
@@ -451,6 +498,9 @@ export class Model {
         break
       case LayoutType.LinearVertical:
         layouts = LayoutGenerator.GenerateLinearVerticalLayout(graph, this.windowHeight)
+        break
+      case LayoutType.TreeHorizontal:
+        layouts = LayoutGenerator.GenerateTreeHorizontalLayout(graph, this.windowWidth, this.windowHeight)
         break
       default:
         throw new Error('Invalid layout type')
