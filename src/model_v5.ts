@@ -1,540 +1,538 @@
-import { Nodes, Edges, Layouts } from 'v-network-graph'
+// import { Nodes, Edges, Layouts } from 'v-network-graph'
 
-// interface _Node {
-//     name?: string;
-//     [x: string]: any;
-// }
-// type Nodes = Record<string, _Node>;
+// // interface _Node {
+// //     name?: string;
+// //     [x: string]: any;
+// // }
+// // type Nodes = Record<string, _Node>;
 
-// interface Edge {
-//     source: string;
-//     target: string;
-//     [x: string]: any;
-// }
-// type Edges = Record<string, Edge>;
+// // interface Edge {
+// //     source: string;
+// //     target: string;
+// //     [x: string]: any;
+// // }
+// // type Edges = Record<string, Edge>;
 
-// interface Position {
-//     x: number;
-//     y: number;
-// }
-// interface FixablePosition extends Position {
-//     fixed?: boolean;
-// }
-// type NodePositions = Record<string, FixablePosition>;
-// interface Layouts {
-//     nodes: NodePositions;
-// }
+// // interface Position {
+// //     x: number;
+// //     y: number;
+// // }
+// // interface FixablePosition extends Position {
+// //     fixed?: boolean;
+// // }
+// // type NodePositions = Record<string, FixablePosition>;
+// // interface Layouts {
+// //     nodes: NodePositions;
+// // }
 
-export enum GraphType { ErdosRenyiRandomGraph, Path, Cycle, Tree, CompleteGraph }
-export enum LayoutType { Random, Circular, LinearHorizontal, LinearVertical, TreeHorizontal, ForceDirected }
+// export enum GraphType { ErdosRenyiRandomGraph, Path, Cycle, Tree, CompleteGraph }
+// export enum LayoutType { Random, Circular, LinearHorizontal, LinearVertical, TreeHorizontal, ForceDirected }
 
-class Graph {
-  nodes: Nodes = {}
-  edges: Edges = {}
-  isDirected: boolean
+// class Graph {
+//   nodes: Nodes = {}
+//   edges: Edges = {}
+//   isDirected: boolean
 
-  private nodeIdCount = 0
-  private edgeIdCount = 0
+//   private nodeIdCount = 0
+//   private edgeIdCount = 0
 
-  constructor (isDirected = false) {
-    this.isDirected = isDirected
-  }
+//   constructor (isDirected = false) {
+//     this.isDirected = isDirected
+//   }
 
-  GetNodeIds (): string[] {
-    return Object.keys(this.nodes)
-  }
+//   GetNodeIds (): string[] {
+//     return Object.keys(this.nodes)
+//   }
 
-  // Time complexity: O(1)
-  AddNode (weight = 1) {
-    const id = (this.nodeIdCount++).toString()
-    this.nodes[id] = { name: id, weight: weight, ports: new Array<string>() }
-  }
+//   // Time complexity: O(1)
+//   AddNode (weight = 1) {
+//     const id = (this.nodeIdCount++).toString()
+//     this.nodes[id] = { name: id, weight: weight, ports: new Array<string>() }
+//   }
 
-  // Time complexity: O(1)
-  AddEdge (sourceId: string, targetId: string, weight = 1) {
-    const edgeId = (this.edgeIdCount++).toString()
-    this.edges[edgeId] = {
-      source: sourceId.toString(),
-      target: targetId.toString(),
-      weight: weight
-    }
+//   // Time complexity: O(1)
+//   AddEdge (sourceId: string, targetId: string, weight = 1) {
+//     const edgeId = (this.edgeIdCount++).toString()
+//     this.edges[edgeId] = {
+//       source: sourceId.toString(),
+//       target: targetId.toString(),
+//       weight: weight
+//     }
 
-    this.nodes[sourceId].ports.push(edgeId)
-    this.nodes[targetId].ports.push(edgeId)
-  }
+//     this.nodes[sourceId].ports.push(edgeId)
+//     this.nodes[targetId].ports.push(edgeId)
+//   }
 
-  // Time complexity: O(1)
-  RemoveNode (nodeId: string) {
-    delete this.nodes[nodeId]
-  }
+//   // Time complexity: O(1)
+//   RemoveNode (nodeId: string) {
+//     delete this.nodes[nodeId]
+//   }
 
-  // Time complexity: O(|D|)
-  RemoveEdge (edgeId: string) {
-    delete this.edges[edgeId]
+//   // Time complexity: O(|D|)
+//   RemoveEdge (edgeId: string) {
+//     delete this.edges[edgeId]
 
-    // Remove the edge from the port lists of the source and target nodes
-    const sourceId = this.edges[edgeId].source
-    const targetId = this.edges[edgeId].target
-    this.nodes[sourceId].ports = this.nodes[sourceId].ports.filter(
-      (portEdgeId: string) => portEdgeId !== edgeId)
-    this.nodes[targetId].ports = this.nodes[targetId].ports.filter(
-      (portEdgeId: string) => portEdgeId !== edgeId)
-  }
+//     // Remove the edge from the port lists of the source and target nodes
+//     const sourceId = this.edges[edgeId].source
+//     const targetId = this.edges[edgeId].target
+//     this.nodes[sourceId].ports = this.nodes[sourceId].ports.filter(
+//       (portEdgeId: string) => portEdgeId !== edgeId)
+//     this.nodes[targetId].ports = this.nodes[targetId].ports.filter(
+//       (portEdgeId: string) => portEdgeId !== edgeId)
+//   }
 
-  // Time complexity: O(1)
-  SetNodeWeight (nodeId: string, weight: number) {
-    this.nodes[nodeId].weight = weight
-  }
+//   // Time complexity: O(1)
+//   SetNodeWeight (nodeId: string, weight: number) {
+//     this.nodes[nodeId].weight = weight
+//   }
 
-  // Time complexity: O(1)
-  SetEdgeWeight (edgeId: string, weight: number) {
-    this.edges[edgeId].weight = weight
-  }
+//   // Time complexity: O(1)
+//   SetEdgeWeight (edgeId: string, weight: number) {
+//     this.edges[edgeId].weight = weight
+//   }
 
-  // Time complexity: O(|D|)
-  GetAdjacentNodes (nodeId: string): string[] {
-    const adjacentNodes: string[] = []
+//   // Time complexity: O(|D|)
+//   GetAdjacentNodes (nodeId: string): string[] {
+//     const adjacentNodes: string[] = []
 
-    this.GetPorts(nodeId).forEach((portEdgeId: string) => {
-      const sourceId = this.edges[portEdgeId].source
-      const targetId = this.edges[portEdgeId].target
-      if (sourceId === nodeId) { adjacentNodes.push(targetId) }
-      if (!this.isDirected && targetId === nodeId) { adjacentNodes.push(sourceId) }
-    })
+//     this.GetPorts(nodeId).forEach((portEdgeId: string) => {
+//       const sourceId = this.edges[portEdgeId].source
+//       const targetId = this.edges[portEdgeId].target
+//       if (sourceId === nodeId) { adjacentNodes.push(targetId) }
+//       if (!this.isDirected && targetId === nodeId) { adjacentNodes.push(sourceId) }
+//     })
 
-    return adjacentNodes
-  }
+//     return adjacentNodes
+//   }
 
-  // Time complexity: O(1)
-  // Ports are the edge ids of incident edges
-  GetPorts (nodeId: string): string[] {
-    return this.nodes[nodeId].ports
-  }
+//   // Time complexity: O(1)
+//   // Ports are the edge ids of incident edges
+//   GetPorts (nodeId: string): string[] {
+//     return this.nodes[nodeId].ports
+//   }
 
-  // Time complexity: O(|E|)
-  // sourceId and targetId are node ids
-  EdgeExists (sourceId: string, targetId: string): boolean {
-    return this.nodes[sourceId].ports.some((portEdgeId: string) => {
-      const edge = this.edges[portEdgeId]
-      return edge.source === sourceId && edge.target === targetId
-    })
-  }
+//   // Time complexity: O(|E|)
+//   // sourceId and targetId are node ids
+//   EdgeExists (sourceId: string, targetId: string): boolean {
+//     return this.nodes[sourceId].ports.some((portEdgeId: string) => {
+//       const edge = this.edges[portEdgeId]
+//       return edge.source === sourceId && edge.target === targetId
+//     })
+//   }
 
-  // Time complexity: O(1)
-  GetNodeCount (): number {
-    return Object.keys(this.nodes).length
-  }
+//   // Time complexity: O(1)
+//   GetNodeCount (): number {
+//     return Object.keys(this.nodes).length
+//   }
 
-  GetNodeDepth (nodeId: string): number {
-    const visited: boolean[] = new Array(this.GetNodeCount()).fill(false)
-    const queue: string[] = []
+//   GetNodeDepth (nodeId: string): number {
+//     const visited: boolean[] = new Array(this.GetNodeCount()).fill(false)
+//     const queue: string[] = []
 
-    // Assume first node is root
-    const startNode = Object.keys(this.nodes)[0]
-    queue.push(startNode)
+//     // Assume first node is root
+//     const startNode = Object.keys(this.nodes)[0]
+//     queue.push(startNode)
 
-    // BFS
-    let depth = 0
-    while (queue.length > 0) {
-      const currentNode = queue.shift() as string
-      visited[parseInt(currentNode)] = true
-      
-      // Add all adjacent nodes to the queue
-      this.GetAdjacentNodes(currentNode).forEach((adjacentNode) => {
-        if (!visited[parseInt(adjacentNode)]) {
-          queue.push(adjacentNode)
-        }
-      })
-
-      if (currentNode === nodeId) {
-        return depth
-      }
-      depth++
-    }
-
-    return -1
-  }
-
-
-  // Time complexity: O(|V| + |E|)
-  IsConnected (): boolean {
-    const visited: boolean[] = new Array(this.GetNodeCount()).fill(false)
-    const queue: string[] = []
-
-    // Pick a random node
-    const startNode = Object.keys(this.nodes)[0]
-    queue.push(startNode)
-
-    while (queue.length > 0) {
-      const currentNode = queue.shift() as string
-      visited[parseInt(currentNode)] = true
-
-      // Add all adjacent nodes to the queue
-      this.GetAdjacentNodes(currentNode).forEach((adjacentNode) => {
-        if (!visited[parseInt(adjacentNode)]) {
-          queue.push(adjacentNode)
-        }
-      })
-    }
-
-    // If any node was not visited, the graph is not connected
-    return !visited.includes(false)
-  }
-}
-
-// class Robot {
-//   // TODO: this should have a queue
-//   BreadthFirstSearch (graph: Graph, startNode: string, endNode: string): string[] {
-//     const numberOfNodes = Object.keys(graph.nodes).length
-//     const visited: boolean[] = new Array(numberOfNodes).fill(false)
-//     const path: string[] = []
-
-//     path.push(startNode)
-
-//     for (let i = 0; i < numberOfNodes; i++) {
-//       const currentNode = path[i]
+//     // BFS
+//     let depth = 0
+//     while (queue.length > 0) {
+//       const currentNode = queue.shift() as string
 //       visited[parseInt(currentNode)] = true
 
-//       if (currentNode === endNode) { break }
-
-//       // Add all adjacent nodes to the path
-//       graph.GetAdjacentNodes(currentNode).forEach((adjacentNode) => {
+//       // Add all adjacent nodes to the queue
+//       this.GetAdjacentNodes(currentNode).forEach((adjacentNode) => {
 //         if (!visited[parseInt(adjacentNode)]) {
-//           path.push(adjacentNode)
+//           queue.push(adjacentNode)
+//         }
+//       })
+
+//       if (currentNode === nodeId) {
+//         return depth
+//       }
+//       depth++
+//     }
+
+//     return -1
+//   }
+
+//   // Time complexity: O(|V| + |E|)
+//   IsConnected (): boolean {
+//     const visited: boolean[] = new Array(this.GetNodeCount()).fill(false)
+//     const queue: string[] = []
+
+//     // Pick a random node
+//     const startNode = Object.keys(this.nodes)[0]
+//     queue.push(startNode)
+
+//     while (queue.length > 0) {
+//       const currentNode = queue.shift() as string
+//       visited[parseInt(currentNode)] = true
+
+//       // Add all adjacent nodes to the queue
+//       this.GetAdjacentNodes(currentNode).forEach((adjacentNode) => {
+//         if (!visited[parseInt(adjacentNode)]) {
+//           queue.push(adjacentNode)
 //         }
 //       })
 //     }
 
-//     return path
-//   }
-
-//   // TODO: finish this
-//   RandomWander (graph: Graph, startNode: string, numberOfSteps: number): string[] {
-//     const path: string[] = []
-
-//     path.push(startNode)
-
-//     for (let i = 0; i < numberOfSteps; i++) {
-//       const currentNode = path[i]
-
-//       // Add a random adjacent node to the path
-//       const adjacentNodes = graph.GetAdjacentNodes(currentNode)
-//       const randomAdjacentNode = adjacentNodes[Math.floor(Math.random() * adjacentNodes.length)]
-//       path.push(randomAdjacentNode)
-//     }
-
-//     return path
+//     // If any node was not visited, the graph is not connected
+//     return !visited.includes(false)
 //   }
 // }
 
-class GraphGenerator {
-  static GenerateErdosRenyiRandomGraph (n: number, p: number, isDirected = false, allowSelfLoops = false, requireConnected = false, maxNumberOfAttempts = 5): Graph {
-    let continueUnitlConnected = requireConnected
-    let graph: Graph
+// // class Robot {
+// //   // TODO: this should have a queue
+// //   BreadthFirstSearch (graph: Graph, startNode: string, endNode: string): string[] {
+// //     const numberOfNodes = Object.keys(graph.nodes).length
+// //     const visited: boolean[] = new Array(numberOfNodes).fill(false)
+// //     const path: string[] = []
 
-    do {
-      graph = new Graph(isDirected)
+// //     path.push(startNode)
 
-      // Create n nodes
-      for (let i = 0; i < n; i++) {
-        graph.AddNode()
-      }
+// //     for (let i = 0; i < numberOfNodes; i++) {
+// //       const currentNode = path[i]
+// //       visited[parseInt(currentNode)] = true
 
-      // Loop over all pairs of nodes
-      // If the random number is less than p, add an edge between them
-      for (let i = 0; i < n; i++) {
-        for (let j = isDirected ? 0 : i; j < n; j++) { // If undirected, only loop over half the pairs
-          if ((i !== j || allowSelfLoops) && Math.random() < p) { // Don't add self-loops unless allowed
-            graph.AddEdge(i.toString(), j.toString())
-          }
-        }
-      }
+// //       if (currentNode === endNode) { break }
 
-      continueUnitlConnected = requireConnected && !graph.IsConnected() && maxNumberOfAttempts-- > 0
-    } while (continueUnitlConnected)
-    if (maxNumberOfAttempts <= 0) { throw new Error('Could not generate a connected graph') }
-    return graph
-  }
+// //       // Add all adjacent nodes to the path
+// //       graph.GetAdjacentNodes(currentNode).forEach((adjacentNode) => {
+// //         if (!visited[parseInt(adjacentNode)]) {
+// //           path.push(adjacentNode)
+// //         }
+// //       })
+// //     }
 
-  static GeneratePath (n: number, isDirected = false): Graph {
-    const graph = new Graph(isDirected)
+// //     return path
+// //   }
 
-    graph.AddNode() // Root node
+// //   // TODO: finish this
+// //   RandomWander (graph: Graph, startNode: string, numberOfSteps: number): string[] {
+// //     const path: string[] = []
 
-    // Create n nodes and connect each new node to the previous one
-    for (let i = 1; i < n; i++) {
-      graph.AddNode()
-      graph.AddEdge((i - 1).toString(), i.toString())
-    }
+// //     path.push(startNode)
 
-    return graph
-  }
+// //     for (let i = 0; i < numberOfSteps; i++) {
+// //       const currentNode = path[i]
 
-  static GenerateCycle (n: number, isDirected = false): Graph {
-    // Geneate a path with n nodes
-    const graph = GraphGenerator.GeneratePath(n, isDirected)
+// //       // Add a random adjacent node to the path
+// //       const adjacentNodes = graph.GetAdjacentNodes(currentNode)
+// //       const randomAdjacentNode = adjacentNodes[Math.floor(Math.random() * adjacentNodes.length)]
+// //       path.push(randomAdjacentNode)
+// //     }
 
-    // Connect the last node to the first one
-    graph.AddEdge((n - 1).toString(), '0')
+// //     return path
+// //   }
+// // }
 
-    return graph
-  }
+// class GraphGenerator {
+//   static GenerateErdosRenyiRandomGraph (n: number, p: number, isDirected = false, allowSelfLoops = false, requireConnected = false, maxNumberOfAttempts = 5): Graph {
+//     let continueUntilConnected = requireConnected
+//     let graph: Graph
 
-  static GenerateTree (n: number, isDirected = false): Graph {
-    const graph = new Graph(isDirected)
+//     do {
+//       graph = new Graph(isDirected)
 
-    graph.AddNode() // Root node
+//       // Create n nodes
+//       for (let i = 0; i < n; i++) {
+//         graph.AddNode()
+//       }
 
-    // Create n nodes and connect each new node to a random existing node
-    for (let i = 1; i < n; i++) {
-      graph.AddNode()
-      const randomExistingNode = Math.floor(Math.random() * i)
-      graph.AddEdge(randomExistingNode.toString(), i.toString())
-    }
+//       // Loop over all pairs of nodes
+//       // If the random number is less than p, add an edge between them
+//       for (let i = 0; i < n; i++) {
+//         for (let j = isDirected ? 0 : i; j < n; j++) { // If undirected, only loop over half the pairs
+//           if ((i !== j || allowSelfLoops) && Math.random() < p) { // Don't add self-loops unless allowed
+//             graph.AddEdge(i.toString(), j.toString())
+//           }
+//         }
+//       }
 
-    return graph
-  }
+//       continueUnitlConnected = requireConnected && !graph.IsConnected() && maxNumberOfAttempts-- > 0
+//     } while (continueUntilConnected)
+//     if (maxNumberOfAttempts <= 0) { throw new Error('Could not generate a connected graph') }
+//     return graph
+//   }
 
-  static GenerateCompleteGraph (n: number, isDirected = false, allowSelfLoops = false): Graph {
-    const graph = new Graph(isDirected)
+//   static GeneratePath (n: number, isDirected = false): Graph {
+//     const graph = new Graph(isDirected)
 
-    // Create n nodes
-    for (let i = 0; i < n; i++) {
-      graph.AddNode()
-    }
+//     graph.AddNode() // Root node
 
-    // Loop over all pairs of nodes
-    for (let i = 0; i < n; i++) {
-      for (let j = isDirected ? 0 : i; j < n; j++) { // If undirected, only loop over half the pairs
-        if ((i !== j || allowSelfLoops)) { // Don't add self-loops unless allowed
-          graph.AddEdge(i.toString(), j.toString())
-        }
-      }
-    }
+//     // Create n nodes and connect each new node to the previous one
+//     for (let i = 1; i < n; i++) {
+//       graph.AddNode()
+//       graph.AddEdge((i - 1).toString(), i.toString())
+//     }
 
-    return graph
-  }
+//     return graph
+//   }
 
-  // GenerateBarabasiAlbertScaleFreeGraph(n: number, m: number, isDirected = false, allowSelfLoops = false): Graph {
-  //     const graph = new Graph(isDirected)
+//   static GenerateCycle (n: number, isDirected = false): Graph {
+//     // Geneate a path with n nodes
+//     const graph = GraphGenerator.GeneratePath(n, isDirected)
 
-  //     // Create n nodes
-  //     for (let i = 0; i < n; i++) {
-  //         graph.AddNode()
-  //     }
+//     // Connect the last node to the first one
+//     graph.AddEdge((n - 1).toString(), '0')
 
-  // }
+//     return graph
+//   }
 
-  // GenerateWattsStrogatzSmallWorldGraph(n: number, k: number, p: number, isDirected = false, allowSelfLoops = false): Graph {
-  //     const graph = new Graph(isDirected)
+//   static GenerateTree (n: number, isDirected = false): Graph {
+//     const graph = new Graph(isDirected)
 
-  //     // Create n nodes
-  //     for (let i = 0; i < n; i++) {
-  //         graph.AddNode()
-  //     }
+//     graph.AddNode() // Root node
 
-  // }
-}
+//     // Create n nodes and connect each new node to a random existing node
+//     for (let i = 1; i < n; i++) {
+//       graph.AddNode()
+//       const randomExistingNode = Math.floor(Math.random() * i)
+//       graph.AddEdge(randomExistingNode.toString(), i.toString())
+//     }
 
-class LayoutGenerator {
-  static GenerateRandomLayout (graph: Graph, width: number, height: number): Layouts {
-    const layouts: Layouts = {
-      nodes: {}
-    }
+//     return graph
+//   }
 
-    graph.GetNodeIds().forEach((nodeId) => {
-      layouts.nodes[nodeId] = {
-        x: Math.random() * width,
-        y: Math.random() * height
-      }
-    })
+//   static GenerateCompleteGraph (n: number, isDirected = false, allowSelfLoops = false): Graph {
+//     const graph = new Graph(isDirected)
 
-    return layouts
-  }
+//     // Create n nodes
+//     for (let i = 0; i < n; i++) {
+//       graph.AddNode()
+//     }
 
-  static GenerateCircularLayout (graph: Graph, width: number, height: number): Layouts {
-    const layouts: Layouts = {
-      nodes: {}
-    }
+//     // Loop over all pairs of nodes
+//     for (let i = 0; i < n; i++) {
+//       for (let j = isDirected ? 0 : i; j < n; j++) { // If undirected, only loop over half the pairs
+//         if ((i !== j || allowSelfLoops)) { // Don't add self-loops unless allowed
+//           graph.AddEdge(i.toString(), j.toString())
+//         }
+//       }
+//     }
 
-    const radius = Math.min(width, height) / 2 * 0.9
+//     return graph
+//   }
 
-    const angleStep = 2 * Math.PI / graph.GetNodeCount()
+//   // GenerateBarabasiAlbertScaleFreeGraph(n: number, m: number, isDirected = false, allowSelfLoops = false): Graph {
+//   //     const graph = new Graph(isDirected)
 
-    let angle = 0
-    graph.GetNodeIds().forEach((nodeId) => {
-      layouts.nodes[nodeId] = {
-        x: radius * Math.cos(angle),
-        y: radius * Math.sin(angle)
-      }
-      angle += angleStep
-    })
+//   //     // Create n nodes
+//   //     for (let i = 0; i < n; i++) {
+//   //         graph.AddNode()
+//   //     }
 
-    return layouts
-  }
+//   // }
 
-  static GenerateLinearHorizontalLayout (graph: Graph, width: number): Layouts {
-    const layouts: Layouts = {
-      nodes: {}
-    }
+//   // GenerateWattsStrogatzSmallWorldGraph(n: number, k: number, p: number, isDirected = false, allowSelfLoops = false): Graph {
+//   //     const graph = new Graph(isDirected)
 
-    const xStep = width / graph.GetNodeCount()
+//   //     // Create n nodes
+//   //     for (let i = 0; i < n; i++) {
+//   //         graph.AddNode()
+//   //     }
 
-    let x = 0
-    graph.GetNodeIds().forEach((nodeId) => {
-      layouts.nodes[nodeId] = {
-        x: x,
-        y: 0
-      }
-      x += xStep
-    })
+//   // }
+// }
 
-    return layouts
-  }
+// class LayoutGenerator {
+//   static GenerateRandomLayout (graph: Graph, width: number, height: number): Layouts {
+//     const layouts: Layouts = {
+//       nodes: {}
+//     }
 
-  static GenerateLinearVerticalLayout (graph: Graph, height: number): Layouts {
-    const layouts: Layouts = {
-      nodes: {}
-    }
+//     graph.GetNodeIds().forEach((nodeId) => {
+//       layouts.nodes[nodeId] = {
+//         x: Math.random() * width,
+//         y: Math.random() * height
+//       }
+//     })
 
-    const yStep = height / graph.GetNodeCount()
+//     return layouts
+//   }
 
-    let y = 0
-    graph.GetNodeIds().forEach((nodeId) => {
-      layouts.nodes[nodeId] = {
-        x: 0,
-        y: y
-      }
-      y += yStep
-    })
+//   static GenerateCircularLayout (graph: Graph, width: number, height: number): Layouts {
+//     const layouts: Layouts = {
+//       nodes: {}
+//     }
 
-    return layouts
-  }
+//     const radius = Math.min(width, height) / 2 * 0.9
 
-  // Layout the graph in a tree-like structure
-  // The root is placed on the top left
-  // The deepest node is placed on the top right
-  // The algorithm starts with the deepest node,
-  // and moves up the tree
-  static GenerateTreeHorizontalLayout (graph: Graph, width: number, height: number): Layouts {
-    const layouts: Layouts = {
-      nodes: {}
-    }
+//     const angleStep = 2 * Math.PI / graph.GetNodeCount()
 
-    // Find the deepest node and its depth
-    let deepestNode: string, depth = 0
-    graph.GetNodeIds().forEach((nodeId) => {
-      const nodeDepth = graph.GetNodeDepth(nodeId)
-      if (nodeDepth > depth) {
-        deepestNode = nodeId
-        depth = nodeDepth
-      }
-    })
+//     let angle = 0
+//     graph.GetNodeIds().forEach((nodeId) => {
+//       layouts.nodes[nodeId] = {
+//         x: radius * Math.cos(angle),
+//         y: radius * Math.sin(angle)
+//       }
+//       angle += angleStep
+//     })
 
-    // Get the parent of the deepest node
-    
+//     return layouts
+//   }
 
-    return layouts
-  }
+//   static GenerateLinearHorizontalLayout (graph: Graph, width: number): Layouts {
+//     const layouts: Layouts = {
+//       nodes: {}
+//     }
 
-  // static GenerateForceDirectedLayout(graph: Graph, width: number, height: number): Layouts {
-  //   // Set initial positions randomly
-  //   const layouts: Layouts = this.GenerateRandomLayout(graph, width, height)
+//     const xStep = width / graph.GetNodeCount()
 
-  //   // Compute the force on each node
+//     let x = 0
+//     graph.GetNodeIds().forEach((nodeId) => {
+//       layouts.nodes[nodeId] = {
+//         x: x,
+//         y: 0
+//       }
+//       x += xStep
+//     })
 
-  // }
-}
+//     return layouts
+//   }
 
-export class Model {
-  visualGraph = {
-    nodes: {},
-    edges: {},
-    layouts: {
-      nodes: {}
-    }
-  }
+//   static GenerateLinearVerticalLayout (graph: Graph, height: number): Layouts {
+//     const layouts: Layouts = {
+//       nodes: {}
+//     }
 
-  windowWidth: number
-  windowHeight: number
+//     const yStep = height / graph.GetNodeCount()
 
-  constructor (width: number, height: number) {
-    this.windowWidth = width
-    this.windowHeight = height
-  }
+//     let y = 0
+//     graph.GetNodeIds().forEach((nodeId) => {
+//       layouts.nodes[nodeId] = {
+//         x: 0,
+//         y: y
+//       }
+//       y += yStep
+//     })
 
-  CreateNewGraph (graphType: GraphType, layoutType: LayoutType, numberOfNodes: number, isDirected: boolean, allowSelfLoops: boolean) {
-    let graph: Graph, layouts: Layouts
+//     return layouts
+//   }
 
-    switch (graphType) {
-      case GraphType.ErdosRenyiRandomGraph:
-        graph = GraphGenerator.GenerateErdosRenyiRandomGraph(numberOfNodes, 0.1, isDirected, allowSelfLoops, true, 50)
-        break
-      case GraphType.Path:
-        graph = GraphGenerator.GeneratePath(numberOfNodes, isDirected)
-        break
-      case GraphType.Cycle:
-        graph = GraphGenerator.GenerateCycle(numberOfNodes, isDirected)
-        break
-      case GraphType.Tree:
-        graph = GraphGenerator.GenerateTree(numberOfNodes, isDirected)
-        break
-      case GraphType.CompleteGraph:
-        graph = GraphGenerator.GenerateCompleteGraph(numberOfNodes, isDirected, allowSelfLoops)
-        break
-      default:
-        throw new Error('Invalid graph type')
-    }
+//   // Layout the graph in a tree-like structure
+//   // The root is placed on the top left
+//   // The deepest node is placed on the top right
+//   // The algorithm starts with the deepest node,
+//   // and moves up the tree
+//   static GenerateTreeHorizontalLayout (graph: Graph, width: number, height: number): Layouts {
+//     const layouts: Layouts = {
+//       nodes: {}
+//     }
 
-    switch (layoutType) {
-      case LayoutType.Random:
-        layouts = LayoutGenerator.GenerateRandomLayout(graph, this.windowWidth, this.windowHeight)
-        break
-      case LayoutType.Circular:
-        layouts = LayoutGenerator.GenerateCircularLayout(graph, this.windowWidth, this.windowHeight)
-        break
-      case LayoutType.LinearHorizontal:
-        layouts = LayoutGenerator.GenerateLinearHorizontalLayout(graph, this.windowWidth)
-        break
-      case LayoutType.LinearVertical:
-        layouts = LayoutGenerator.GenerateLinearVerticalLayout(graph, this.windowHeight)
-        break
-      case LayoutType.TreeHorizontal:
-        layouts = LayoutGenerator.GenerateTreeHorizontalLayout(graph, this.windowWidth, this.windowHeight)
-        break
-      default:
-        throw new Error('Invalid layout type')
-    }
+//     // Find the deepest node and its depth
+//     let deepestNode: string; let depth = 0
+//     graph.GetNodeIds().forEach((nodeId) => {
+//       const nodeDepth = graph.GetNodeDepth(nodeId)
+//       if (nodeDepth > depth) {
+//         deepestNode = nodeId
+//         depth = nodeDepth
+//       }
+//     })
 
-    this.visualGraph.nodes = graph.nodes
-    this.visualGraph.edges = graph.edges
-    this.visualGraph.layouts = layouts
-  }
+//     // Get the parent of the deepest node
 
-  GetData () {
-    return this.visualGraph
-  }
-}
+//     return layouts
+//   }
 
-// const g = new Graph(true)
-// g.AddNode()
-// g.AddNode()
-// g.AddNode()
-// g.AddNode()
-// g.AddNode()
-// g.AddNode() // 5
-// g.AddEdge('1', '0')
-// g.AddEdge('1', '2')
-// g.AddEdge('5', '1')
-// g.AddEdge('4', '5')
+//   // static GenerateForceDirectedLayout(graph: Graph, width: number, height: number): Layouts {
+//   //   // Set initial positions randomly
+//   //   const layouts: Layouts = this.GenerateRandomLayout(graph, width, height)
 
-// console.log(g)
-// console.log(g.EdgeExists('5', '4'))
-// console.log(g.EdgeExists('4', '4'))
-// console.log(g.EdgeExists('5', '1'))
+//   //   // Compute the force on each node
 
-// const rg = GraphGenerator.GenerateErdosRenyiRandomGraph(10, 1, true, true)
-// console.log(rg)
+//   // }
+// }
 
-// const m = new Model()
-// m.createNewGraph(GraphType.ErdosRenyiRandomGraph, LayoutType.Random, 10, true, true)
+// export class Model {
+//   visualGraph = {
+//     nodes: {},
+//     edges: {},
+//     layouts: {
+//       nodes: {}
+//     }
+//   }
+
+//   windowWidth: number
+//   windowHeight: number
+
+//   constructor (width: number, height: number) {
+//     this.windowWidth = width
+//     this.windowHeight = height
+//   }
+
+//   CreateNewGraph (graphType: GraphType, layoutType: LayoutType, numberOfNodes: number, isDirected: boolean, allowSelfLoops: boolean) {
+//     let graph: Graph, layouts: Layouts
+
+//     switch (graphType) {
+//       case GraphType.ErdosRenyiRandomGraph:
+//         graph = GraphGenerator.GenerateErdosRenyiRandomGraph(numberOfNodes, 0.1, isDirected, allowSelfLoops, true, 50)
+//         break
+//       case GraphType.Path:
+//         graph = GraphGenerator.GeneratePath(numberOfNodes, isDirected)
+//         break
+//       case GraphType.Cycle:
+//         graph = GraphGenerator.GenerateCycle(numberOfNodes, isDirected)
+//         break
+//       case GraphType.Tree:
+//         graph = GraphGenerator.GenerateTree(numberOfNodes, isDirected)
+//         break
+//       case GraphType.CompleteGraph:
+//         graph = GraphGenerator.GenerateCompleteGraph(numberOfNodes, isDirected, allowSelfLoops)
+//         break
+//       default:
+//         throw new Error('Invalid graph type')
+//     }
+
+//     switch (layoutType) {
+//       case LayoutType.Random:
+//         layouts = LayoutGenerator.GenerateRandomLayout(graph, this.windowWidth, this.windowHeight)
+//         break
+//       case LayoutType.Circular:
+//         layouts = LayoutGenerator.GenerateCircularLayout(graph, this.windowWidth, this.windowHeight)
+//         break
+//       case LayoutType.LinearHorizontal:
+//         layouts = LayoutGenerator.GenerateLinearHorizontalLayout(graph, this.windowWidth)
+//         break
+//       case LayoutType.LinearVertical:
+//         layouts = LayoutGenerator.GenerateLinearVerticalLayout(graph, this.windowHeight)
+//         break
+//       case LayoutType.TreeHorizontal:
+//         layouts = LayoutGenerator.GenerateTreeHorizontalLayout(graph, this.windowWidth, this.windowHeight)
+//         break
+//       default:
+//         throw new Error('Invalid layout type')
+//     }
+
+//     this.visualGraph.nodes = graph.nodes
+//     this.visualGraph.edges = graph.edges
+//     this.visualGraph.layouts = layouts
+//   }
+
+//   GetData () {
+//     return this.visualGraph
+//   }
+// }
+
+// // const g = new Graph(true)
+// // g.AddNode()
+// // g.AddNode()
+// // g.AddNode()
+// // g.AddNode()
+// // g.AddNode()
+// // g.AddNode() // 5
+// // g.AddEdge('1', '0')
+// // g.AddEdge('1', '2')
+// // g.AddEdge('5', '1')
+// // g.AddEdge('4', '5')
+
+// // console.log(g)
+// // console.log(g.EdgeExists('5', '4'))
+// // console.log(g.EdgeExists('4', '4'))
+// // console.log(g.EdgeExists('5', '1'))
+
+// // const rg = GraphGenerator.GenerateErdosRenyiRandomGraph(10, 1, true, true)
+// // console.log(rg)
+
+// // const m = new Model()
+// // m.createNewGraph(GraphType.ErdosRenyiRandomGraph, LayoutType.Random, 10, true, true)

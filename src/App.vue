@@ -85,17 +85,26 @@ const zoomLevel = ref(1.5)
 <script setup lang="ts">
 import * as vNG from 'v-network-graph'
 // import data from './data'
-import { Model, GraphType, LayoutType } from './model_v5'
+import { Graph, GraphGenerator } from './graph'
+import { VisualGraph, LayoutType } from './visual_graph'
 
-const numberOfNodes = 15
+const numberOfNodes = 10
 const graphWidth = 1000
-const graphHeight = 1000
+const graphHeight = 700
 const isDirected = false
 const allowSelfLoops = false
 
-const m = new Model(graphWidth, graphHeight)
-m.CreateNewGraph(GraphType.Tree, LayoutType.Circular, numberOfNodes, isDirected, allowSelfLoops)
-const data = m.GetData()
+let maxNumberOfAttempts = 10
+let graph: Graph
+do {
+  graph = GraphGenerator.generateErdosRenyiRandomGraph(numberOfNodes, 0.1, isDirected, allowSelfLoops)
+} while (!graph.isConnected() && maxNumberOfAttempts-- > 0)
+console.log(maxNumberOfAttempts)
+
+// const graph = GraphGenerator.generateCompleteGraph(numberOfNodes, isDirected, allowSelfLoops)
+
+const vng = new VisualGraph(graph, graphWidth, graphHeight, LayoutType.Circular)
+const data = vng.getData()
 
 const configs = vNG.defineConfigs({
   node: {
