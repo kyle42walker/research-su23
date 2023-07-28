@@ -84,24 +84,23 @@ const zoomLevel = ref(1.5)
 
 <script setup lang="ts">
 import * as vNG from 'v-network-graph'
-// import data from './data'
-import { Graph, GraphGenerator } from './graph'
+import { Model, GraphType } from './model'
 import { VisualGraph, LayoutType } from './visual_graph'
 
-const numberOfNodes = 10
+const model = new Model()
+model.graphType = GraphType.ErdosRenyiRandom
+model.nodeCount = 10
+model.edgeProbability = 0.3
+model.isDirected = false
+model.allowSelfLoops = false
+model.requireConnected = true
+model.maxNumberOfGraphGenerationAttempts = 1
+
+model.generateGraph()
+const graph = model.graph
+
 const graphWidth = 1000
 const graphHeight = 700
-const isDirected = false
-const allowSelfLoops = false
-
-let maxNumberOfAttempts = 10
-let graph: Graph
-do {
-  graph = GraphGenerator.generateErdosRenyiRandomGraph(numberOfNodes, 0.1, isDirected, allowSelfLoops)
-} while (!graph.isConnected() && maxNumberOfAttempts-- > 0)
-console.log(maxNumberOfAttempts)
-
-// const graph = GraphGenerator.generateCompleteGraph(numberOfNodes, isDirected, allowSelfLoops)
 
 const vng = new VisualGraph(graph, graphWidth, graphHeight, LayoutType.Circular)
 const data = vng.getData()
@@ -128,7 +127,7 @@ const configs = vNG.defineConfigs({
     }
   }
 })
-if (isDirected) { configs.edge.marker.target.type = 'arrow' }
+if (model.isDirected) { configs.edge.marker.target.type = 'arrow' }
 </script>
 
 <template>
