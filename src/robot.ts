@@ -66,11 +66,11 @@ export class RandomWalkRobotCoordinator {
 
       // Stop robots that have reached a new node
       activeRobots.forEach((robot) => {
-        robot.step()
         if (!this.visitedNodes[robot.currentNode]) {
           robot.state = 'stopped'
           this.visitedNodes[robot.currentNode] = true
         }
+        robot.step()
       })
     }
 }
