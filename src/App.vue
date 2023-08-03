@@ -84,25 +84,27 @@ const zoomLevel = ref(1.5)
 
 <script setup lang="ts">
 import * as vNG from 'v-network-graph'
-import { Model, GraphType } from './model'
+import { Model, GraphType, RobotType } from './model'
 import { VisualGraph, LayoutType } from './visual_graph'
 
 const model = new Model()
 model.graphType = GraphType.ErdosRenyiRandom
 model.nodeCount = 10
-model.edgeProbability = 0.3
+model.edgeProbability = 0.1
 model.isDirected = false
 model.allowSelfLoops = false
 model.requireConnected = true
-model.maxNumberOfGraphGenerationAttempts = 1
+model.maxNumberOfGraphGenerationAttempts = 100
+
+model.robotType = RobotType.RandomWalkDispersion
+model.robotCount = 1
+model.robotStartingNode = 0
 
 model.generateGraph()
-const graph = model.graph
-
 const graphWidth = 1000
 const graphHeight = 700
 
-const vng = new VisualGraph(graph, graphWidth, graphHeight, LayoutType.Circular)
+const vng = new VisualGraph(model.graph, graphWidth, graphHeight, LayoutType.Circular)
 const data = vng.getData()
 
 const configs = vNG.defineConfigs({

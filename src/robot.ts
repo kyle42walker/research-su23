@@ -1,135 +1,32 @@
 import { Graph } from './graph'
 
-// class RobotMemory {
-//     stepsTaken = 0
-// }
-
-// class RobotMemoryWith extends RobotMemory {
-
-// }
-
-// class Robot {
-//     graph: Graph
-//     startingNode: number
-//     currentNode: number
-
-//     constructor (graph: Graph, startingNode: number) {
-//       this.graph = graph
-//       this.currentNode = this.startingNode = startingNode
-//     }
-
-//     reset () {
-//       this.currentNode = this.startingNode
-//       this.portsTraversed = []
-//       this.state = 'walking'
-//     }
-
-//     // Time complexity: O(1)
-//     step () {
-//       const port = Math.floor(Math.random() * this.graph.getNumberOfPorts(this.currentNode))
-//       this.currentNode = this.graph.getAdjacentNodeFromPort(this.currentNode, port)
-//       this.portsTraversed.push(port)
-//     }
-
-//     walkNumberOfSteps (steps: number) {
-//       for (let i = 0; i < steps; ++i) {
-//         this.step()
-//       }
-//     }
-
-//     walkUntilNodeIsReached (targetNode: number) {
-//       while (this.currentNode !== targetNode) {
-//         this.step()
-//       }
-//     }
-// }
-
-// class RobotCoordinator {
-//     graph: Graph
-//     robots: Robot[] = []
-//     visitedNodes: boolean[] = []
-//     stepsTaken = 0
-
-//     constructor (graph: Graph) {
-//       this.graph = graph
-//       this.visitedNodes = new Array(graph.getNodeCount()).fill(false)
-//     }
-
-//     createRobots (robotCount: number, startingNode: number) {
-//       for (let i = 0; i < robotCount; ++i) {
-//         this.robots.push(new Robot(this.graph, startingNode))
-//       }
-//     }
-
-//     reset () {
-//       this.robots.forEach(robot => robot.reset())
-//       this.visitedNodes = new Array(this.graph.getNodeCount()).fill(false)
-//       this.stepsTaken = 0
-//     }
-
-//     stepDispersionAlgorithm () {
-//       const activeRobots = this.robots.filter(robot => robot.state === 'walking')
-
-//       // Stop robots that have reached a new node
-//       activeRobots.forEach((robot) => {
-//         if (!this.visitedNodes[robot.currentNode]) {
-//           robot.state = 'stopped'
-
-//           // Update the visited nodes array
-//           this.visitedNodes[robot.currentNode] = true
-
-//           // Update the number of steps taken
-//           this.stepsTaken = Math.max(this.stepsTaken, robot.portsTraversed.length)
-//         }
-//         robot.step()
-//       })
-//     }
-// }
-
-
-class RandomWalkRobot {
-    graph: Graph
-    startingNode: number
-    currentNode: number
-    portsTraversed: number[] = []
-    state: 'walking' | 'stopped' = 'walking'
-
-    constructor (graph: Graph, startingNode: number) {
-      this.graph = graph
-      this.currentNode = this.startingNode = startingNode
-    }
-
-    reset () {
-      this.currentNode = this.startingNode
-      this.portsTraversed = []
-      this.state = 'walking'
-    }
-
-    // Time complexity: O(1)
-    step () {
-      const port = Math.floor(Math.random() * this.graph.getNumberOfPorts(this.currentNode))
-      this.currentNode = this.graph.getAdjacentNodeFromPort(this.currentNode, port)
-      this.portsTraversed.push(port)
-    }
-
-    walkNumberOfSteps (steps: number) {
-      for (let i = 0; i < steps; ++i) {
-        this.step()
-      }
-    }
-
-    walkUntilNodeIsReached (targetNode: number) {
-      while (this.currentNode !== targetNode) {
-        this.step()
-      }
-    }
+// Information required to track a robot in the graph
+type Robot = {
+  startNode: number
+  currentNode: number
+  portsTraversed: number[]
 }
 
-class RandomWalkRobotCoordinator {
+// Robot memory -- extends Robot type
+type RandomWalkRobot = Robot & {
+  state: 'walking' | 'stopped'
+}
+
+// Manages the robots and their movement
+export type RobotCoordinator = {
+  graph: Graph
+  robots: Robot[]
+  stepNumber: number
+  createRobots: (robotCount: number, startingNode: number) => void
+  step: () => void
+}
+
+// A robot coordinator that implements the random walk dispersion algorithm
+export class RandomWalkDispersionRobotCoordinator implements RobotCoordinator {
     graph: Graph
     robots: RandomWalkRobot[] = []
     visitedNodes: boolean[] = []
-    stepsTaken = 0
+    stepNumber = 0
 
     constructor (graph: Graph) {
       this.graph = graph
@@ -138,26 +35,33 @@ class RandomWalkRobotCoordinator {
 
     createRobots (robotCount: number, startingNode: number) {
       for (let i = 0; i < robotCount; ++i) {
-        this.robots.push(new RandomWalkRobot(this.graph, startingNode))
+        const robot: RandomWalkRobot = {
+          startNode: startingNode,
+          currentNode: startingNode,
+          portsTraversed: [],
+          state: 'walking'
+        }
+        this.robots.push(robot)
       }
     }
 
-    reset () {
-      this.robots.forEach(robot => robot.reset())
-      this.visitedNodes = new Array(this.graph.getNodeCount()).fill(false)
-      this.stepsTaken = 0
-    }
-
-    stepDispersionAlgorithm () {
+    step () {
+      // Move all active robots
       const activeRobots = this.robots.filter(robot => robot.state === 'walking')
-
-      // Stop robots that have reached a new node
       activeRobots.forEach((robot) => {
+        // Stop any robots that have reached a new node
         if (!this.visitedNodes[robot.currentNode]) {
-          robot.state = 'stopped'
           this.visitedNodes[robot.currentNode] = true
+          robot.state = 'stopped'
+          return // Continue forEach loop
         }
-        robot.step()
+
+        // Move the robot to a random adjacent node
+        const port = Math.floor(Math.random() * this.graph.getNumberOfPorts(robot.currentNode))
+        robot.currentNode = this.graph.getAdjacentNodeFromPort(robot.currentNode, port)
+        robot.portsTraversed.push(port)
       })
+
+      ++this.stepNumber
     }
 }

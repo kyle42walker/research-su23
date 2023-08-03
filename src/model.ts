@@ -1,55 +1,75 @@
 import { Graph, GraphGenerator } from './graph'
-// import { RobotCoordinator } from './robot'
+import * as robot from './robot'
 
 export enum GraphType { Path, Cycle, Complete, ErdosRenyiRandom }
+export enum RobotType { RandomWalkDispersion }
 
 export class Model {
-    graph: Graph = {} as Graph
-    private _graphType: GraphType = GraphType.Path
+    private _graph: Graph = {} as Graph
+    public graphType: GraphType = GraphType.Path
     private _nodeCount = 0
     private _edgeProbability = 0.5
-    private _isDirected = false
-    private _allowSelfLoops = false
-    private _requireConnected = false
-    private _maxNumberOfGraphGenerationAttempts = 10
+    public isDirected = false
+    public allowSelfLoops = false
+    public requireConnected = false
+    private _maxNumberOfGraphGenerationAttempts = 100
 
-    // robotCoordinator: RobotCoordinator = {} as RandomWalkRobotCoordinator
+    public robotCoordinator: robot.RobotCoordinator = {} as robot.RobotCoordinator
+    public robotType: RobotType = RobotType.RandomWalkDispersion
+    private _robotCount = 0
+    private _robotStartingNode = 0
 
     constructor () {
       this.generateGraph()
+      this.generateRobots()
     }
 
     generateGraph () {
-      switch (this._graphType) {
+      let attempts = this.maxNumberOfGraphGenerationAttempts
+      switch (this.graphType) {
         case GraphType.ErdosRenyiRandom:
           do {
-            this.graph = GraphGenerator.generateErdosRenyiRandomGraph(
-              this._nodeCount,
-              this._edgeProbability,
-              this._isDirected,
-              this._allowSelfLoops
+            this._graph = GraphGenerator.generateErdosRenyiRandomGraph(
+              this.nodeCount,
+              this.edgeProbability,
+              this.isDirected,
+              this.allowSelfLoops
             )
-          } while (this._requireConnected && !this.graph.isConnected() && --this._maxNumberOfGraphGenerationAttempts > 0)
-          if (this._maxNumberOfGraphGenerationAttempts === 0) { throw new Error('Could not generate a connected graph') }
+            console.log(this._graph)
+          } while (this.requireConnected && !this.graph.isConnected() && --attempts > 0)
+          if (attempts === 0) { throw new Error('Could not generate a connected graph') }
           break
         case GraphType.Path:
-          this.graph = GraphGenerator.generatePath(this._nodeCount, this._isDirected)
+          this._graph = GraphGenerator.generatePath(this.nodeCount, this.isDirected)
           break
         case GraphType.Cycle:
-          this.graph = GraphGenerator.generateCycle(this._nodeCount, this._isDirected)
+          this._graph = GraphGenerator.generateCycle(this.nodeCount, this.isDirected)
           break
         case GraphType.Complete:
-          this.graph = GraphGenerator.generateCompleteGraph(this._nodeCount, this._isDirected, this._allowSelfLoops)
+          this._graph = GraphGenerator.generateCompleteGraph(this.nodeCount, this.isDirected, this.allowSelfLoops)
           break
         default:
-          throw new Error(`Invalid graph type: ${this._graphType}`)
+          throw new Error(`Invalid graph type: ${this.graphType}`)
       }
     }
 
-    // Getters and setters
+    generateRobots () {
+      switch (this.robotType) {
+        case RobotType.RandomWalkDispersion:
+          this.robotCoordinator = new robot.RandomWalkDispersionRobotCoordinator(this.graph)
+          this.robotCoordinator.createRobots(this.robotCount, this.robotStartingNode)
+          break
+        default:
+          throw new Error(`Invalid robot type: ${this.robotType}`)
+      }
+    }
 
-    get graphType (): GraphType { return this._graphType }
-    set graphType (value: GraphType) { this._graphType = value }
+    stepSimulation () {
+      this.robotCoordinator.step()
+    }
+
+    // Getters and setters
+    get graph (): Graph { return this._graph }
 
     get nodeCount (): number { return this._nodeCount }
     set nodeCount (value: number) {
@@ -63,18 +83,26 @@ export class Model {
       this._edgeProbability = value
     }
 
-    get isDirected (): boolean { return this._isDirected }
-    set isDirected (value: boolean) { this._isDirected = value }
-
-    get allowSelfLoops (): boolean { return this._allowSelfLoops }
-    set allowSelfLoops (value: boolean) { this._allowSelfLoops = value }
-
-    get requireConnected (): boolean { return this._requireConnected }
-    set requireConnected (value: boolean) { this._requireConnected = value }
-
     get maxNumberOfGraphGenerationAttempts (): number { return this._maxNumberOfGraphGenerationAttempts }
     set maxNumberOfGraphGenerationAttempts (value: number) {
-      if (value < 1) { throw new Error('Max number of graph generation attempts must be positive') }
+      if (value < 1) {
+        console.log(value)
+        console.log(value < 1)
+        console.log(this._maxNumberOfGraphGenerationAttempts)
+        throw new Error('Max number of graph generation attempts must be positive')
+      }
       this._maxNumberOfGraphGenerationAttempts = value
+    }
+
+    get robotCount (): number { return this._robotCount }
+    set robotCount (value: number) {
+      if (value < 0) { throw new Error('Robot count must be non-negative') }
+      this._robotCount = value
+    }
+
+    get robotStartingNode (): number { return this._robotStartingNode }
+    set robotStartingNode (value: number) {
+      if (value < 0 || value >= this.nodeCount) { throw new Error('Starting node must be in [0, nodeCount)') }
+      this._robotStartingNode = value
     }
 }
