@@ -1,7 +1,8 @@
 import { Graph } from './graph'
 
 // Information required to track a robot in the graph
-type Robot = {
+export type Robot = {
+  id: number
   startNode: number
   currentNode: number
   portsTraversed: number[]
@@ -19,10 +20,11 @@ export type RobotCoordinator = {
   stepNumber: number
   createRobots: (robotCount: number, startingNode: number) => void
   step: () => void
+  stepUntilDispersed: () => void
 }
 
-// A robot coordinator that implements the random walk dispersion algorithm
-export class RandomWalkDispersionRobotCoordinator implements RobotCoordinator {
+// A robot coordinator that implements a random walk algorithm
+export class RandomWalkRobotCoordinator implements RobotCoordinator {
     graph: Graph
     robots: RandomWalkRobot[] = []
     visitedNodes: boolean[] = []
@@ -36,6 +38,7 @@ export class RandomWalkDispersionRobotCoordinator implements RobotCoordinator {
     createRobots (robotCount: number, startingNode: number) {
       for (let i = 0; i < robotCount; ++i) {
         const robot: RandomWalkRobot = {
+          id: i,
           startNode: startingNode,
           currentNode: startingNode,
           portsTraversed: [],
@@ -63,5 +66,11 @@ export class RandomWalkDispersionRobotCoordinator implements RobotCoordinator {
       })
 
       ++this.stepNumber
+    }
+
+    stepUntilDispersed () {
+      while (this.visitedNodes.includes(false)) {
+        this.step()
+      }
     }
 }

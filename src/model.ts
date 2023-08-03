@@ -2,7 +2,7 @@ import { Graph, GraphGenerator } from './graph'
 import * as robot from './robot'
 
 export enum GraphType { Path, Cycle, Complete, ErdosRenyiRandom }
-export enum RobotType { RandomWalkDispersion }
+export enum RobotType { RandomWalk }
 
 export class Model {
     private _graph: Graph = {} as Graph
@@ -15,7 +15,7 @@ export class Model {
     private _maxNumberOfGraphGenerationAttempts = 100
 
     public robotCoordinator: robot.RobotCoordinator = {} as robot.RobotCoordinator
-    public robotType: RobotType = RobotType.RandomWalkDispersion
+    public robotType: RobotType = RobotType.RandomWalk
     private _robotCount = 0
     private _robotStartingNode = 0
 
@@ -35,7 +35,6 @@ export class Model {
               this.isDirected,
               this.allowSelfLoops
             )
-            console.log(this._graph)
           } while (this.requireConnected && !this.graph.isConnected() && --attempts > 0)
           if (attempts === 0) { throw new Error('Could not generate a connected graph') }
           break
@@ -55,8 +54,8 @@ export class Model {
 
     generateRobots () {
       switch (this.robotType) {
-        case RobotType.RandomWalkDispersion:
-          this.robotCoordinator = new robot.RandomWalkDispersionRobotCoordinator(this.graph)
+        case RobotType.RandomWalk:
+          this.robotCoordinator = new robot.RandomWalkRobotCoordinator(this.graph)
           this.robotCoordinator.createRobots(this.robotCount, this.robotStartingNode)
           break
         default:
@@ -66,6 +65,10 @@ export class Model {
 
     stepSimulation () {
       this.robotCoordinator.step()
+    }
+
+    dispersionSimulation () {
+      this.robotCoordinator.stepUntilDispersed()
     }
 
     // Getters and setters

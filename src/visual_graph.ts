@@ -1,5 +1,6 @@
 import { Graph } from './graph'
-import { Nodes, Edges, Layouts } from 'v-network-graph'
+import { Robot } from './robot'
+import { Nodes, Edges, Layouts, Paths } from 'v-network-graph'
 
 export enum LayoutType { Random, Circular, LinearHorizontal, LinearVertical, ForceDirected }
 
@@ -22,11 +23,31 @@ export class VisualGraph {
       }
     }
 
+    static getPath (robot: Robot, graph: Graph): Paths {
+      const id = robot.id.toString()
+      let sourceNode = robot.startNode
+      let targetNode
+      let edgeId
+      const edges = robot.portsTraversed.map((port) => {
+        targetNode = graph.getAdjacentNodeFromPort(sourceNode, port)
+        // Undirected graph edges are stored in the format "{smallerNodeId}-{largerNodeId}"
+        if (targetNode < sourceNode && !graph.isDirected) {
+          edgeId = `${targetNode}-${sourceNode}`
+        } else {
+          edgeId = `${sourceNode}-${targetNode}`
+        }
+        sourceNode = targetNode
+        return edgeId
+      })
+      return { [id]: { edges } }
+    }
+
     static extractNodes (graph: Graph): Nodes {
       const nodes: Nodes = {}
 
       graph.nodes.forEach((node, id) => {
         nodes[id.toString()] = {
+          name: id.toString(),
           weight: node.weight
         }
       })
