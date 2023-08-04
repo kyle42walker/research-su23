@@ -2,7 +2,7 @@ import { Graph, GraphGenerator } from './graph'
 import * as robot from './robot'
 
 export enum GraphType { Path, Cycle, Complete, ErdosRenyiRandom }
-export enum RobotType { RandomWalk }
+export enum RobotType { RandomWalkDispersion, RandomWalkExploration }
 
 export class Model {
     private _graph: Graph = {} as Graph
@@ -15,7 +15,7 @@ export class Model {
     private _maxNumberOfGraphGenerationAttempts = 100
 
     public robotCoordinator: robot.RobotCoordinator = {} as robot.RobotCoordinator
-    public robotType: RobotType = RobotType.RandomWalk
+    public robotType: RobotType = RobotType.RandomWalkDispersion
     private _robotCount = 0
     private _robotStartingNode = 0
 
@@ -54,8 +54,12 @@ export class Model {
 
     generateRobots () {
       switch (this.robotType) {
-        case RobotType.RandomWalk:
-          this.robotCoordinator = new robot.RandomWalkRobotCoordinator(this.graph)
+        case RobotType.RandomWalkDispersion:
+          this.robotCoordinator = new robot.RandomWalkDispersionRobotCoordinator(this.graph)
+          this.robotCoordinator.createRobots(this.robotCount, this.robotStartingNode)
+          break
+        case RobotType.RandomWalkExploration:
+          this.robotCoordinator = new robot.RandomWalkExplorationRobotCoordinator(this.graph)
           this.robotCoordinator.createRobots(this.robotCount, this.robotStartingNode)
           break
         default:
@@ -63,12 +67,20 @@ export class Model {
       }
     }
 
-    stepSimulation () {
+    stepRobots () {
       this.robotCoordinator.step()
     }
 
-    dispersionSimulation () {
-      this.robotCoordinator.stepUntilDispersed()
+    runRobotDispersion () {
+      while (this.robotCoordinator.robots.some(robot => robot.state === 'active')) {
+        this.stepRobots()
+      }
+    }
+
+    runRobotExploration () {
+      while (this.robotCoordinator.visitedNodes.includes(false)) {
+        this.stepRobots()
+      }
     }
 
     // Getters and setters
