@@ -6,14 +6,16 @@ export type Robot = {
   startNode: number
   currentNode: number
   portsTraversed: number[]
-  state: 'active' | 'inactive'
 }
+
+type RobotWithState = Robot & { state: 'active' | 'inactive' }
 
 // Manages the robots and their movement
 export abstract class RobotCoordinator {
   graph: Graph
   visitedNodes: boolean[]
   robots: Robot[] = []
+  robotCount = 0
   stepNumber = 0
 
   constructor (graph: Graph) {
@@ -21,25 +23,27 @@ export abstract class RobotCoordinator {
     this.visitedNodes = new Array(graph.getNodeCount()).fill(false)
   }
 
-  createRobots (robotCount: number, startingNode: number) {
-    for (let i = 0; i < robotCount; ++i) {
-      const robot: Robot = {
-        id: i,
-        startNode: startingNode,
-        currentNode: startingNode,
-        portsTraversed: [],
-        state: 'active'
-      }
-      this.robots.push(robot)
-    }
-  }
-
+  abstract createRobots (numberOfRobots: number, startingNode: number): void
   abstract step (): void
   abstract run (): void
 }
 
 // A robot coordinator that implements a random walk dispersion algorithm
 export class RandomWalkDispersionRobotCoordinator extends RobotCoordinator {
+  robots: RobotWithState[] = []
+
+  createRobots (numberOfRobots: number, startingNode: number) {
+    for (let i = 0; i < numberOfRobots; ++i) {
+      this.robots.push({
+        id: this.robotCount++,
+        startNode: startingNode,
+        currentNode: startingNode,
+        portsTraversed: [],
+        state: 'active'
+      })
+    }
+  }
+
   step () {
     // Move all active robots
     const activeRobots = this.robots.filter(robot => robot.state === 'active')
@@ -69,11 +73,21 @@ export class RandomWalkDispersionRobotCoordinator extends RobotCoordinator {
 
 // A robot coordinator that implements a random walk exploration algorithm
 export class RandomWalkExplorationRobotCoordinator extends RobotCoordinator {
+  createRobots (numberOfRobots: number, startingNode: number) {
+    for (let i = 0; i < numberOfRobots; ++i) {
+      this.robots.push({
+        id: this.robotCount++,
+        startNode: startingNode,
+        currentNode: startingNode,
+        portsTraversed: []
+      })
+    }
+  }
+
   step () {
     this.robots.forEach((robot) => {
       if (!this.visitedNodes[robot.currentNode]) {
         this.visitedNodes[robot.currentNode] = true
-        return // Continue forEach loop
       }
 
       // Move the robot to a random adjacent node
