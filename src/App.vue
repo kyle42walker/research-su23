@@ -30,11 +30,11 @@ const vng = new VisualGraph(model.graph, graphWidth, graphHeight, LayoutType.Cir
 const data = vng.getData()
 
 // Robots
-model.robotType = RobotType.RandomWalkExploration
+model.robotType = RobotType.RandomWalkDispersion
 model.robotCount = 20
 model.robotStartingNode = 0
 model.generateRobots()
-model.runRobotExploration()
+model.runRobots()
 
 // Config
 

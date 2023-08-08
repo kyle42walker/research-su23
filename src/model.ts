@@ -71,16 +71,8 @@ export class Model {
       this.robotCoordinator.step()
     }
 
-    runRobotDispersion () {
-      while (this.robotCoordinator.robots.some(robot => robot.state === 'active')) {
-        this.stepRobots()
-      }
-    }
-
-    runRobotExploration () {
-      while (this.robotCoordinator.visitedNodes.includes(false)) {
-        this.stepRobots()
-      }
+    runRobots () {
+      this.robotCoordinator.run()
     }
 
     // Getters and setters

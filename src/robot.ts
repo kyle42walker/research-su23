@@ -6,7 +6,7 @@ export type Robot = {
   startNode: number
   currentNode: number
   portsTraversed: number[]
-  state: 'active' | 'stopped'
+  state: 'active' | 'inactive'
 }
 
 // Manages the robots and their movement
@@ -35,6 +35,7 @@ export abstract class RobotCoordinator {
   }
 
   abstract step (): void
+  abstract run (): void
 }
 
 // A robot coordinator that implements a random walk dispersion algorithm
@@ -46,7 +47,7 @@ export class RandomWalkDispersionRobotCoordinator extends RobotCoordinator {
       // Stop any robots that have reached a new node
       if (!this.visitedNodes[robot.currentNode]) {
         this.visitedNodes[robot.currentNode] = true
-        robot.state = 'stopped'
+        robot.state = 'inactive'
         return // Continue forEach loop
       }
 
@@ -57,6 +58,12 @@ export class RandomWalkDispersionRobotCoordinator extends RobotCoordinator {
     })
 
     ++this.stepNumber
+  }
+
+  run () {
+    while (this.robots.some(robot => robot.state === 'active')) {
+      this.step()
+    }
   }
 }
 
@@ -76,5 +83,11 @@ export class RandomWalkExplorationRobotCoordinator extends RobotCoordinator {
     })
 
     ++this.stepNumber
+  }
+
+  run () {
+    while (this.visitedNodes.includes(false)) {
+      this.step()
+    }
   }
 }
