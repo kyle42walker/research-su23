@@ -1,7 +1,7 @@
 import { Graph, GraphGenerator } from './graph'
 import * as robot from './robot'
 
-export enum GraphType { Path, Cycle, Complete, ErdosRenyiRandom }
+export enum GraphType { Path, Cycle, Complete, ErdosRenyiRandom, ArbitraryTree }
 export enum RobotType { RandomWalkDispersion, RandomWalkExploration }
 
 export class Model {
@@ -12,7 +12,7 @@ export class Model {
     public isDirected = false
     public allowSelfLoops = false
     public requireConnected = false
-    private _maxNumberOfGraphGenerationAttempts = 100
+    private _maxNumberOfGraphGenerationAttempts = 10
 
     public robotCoordinator: robot.RobotCoordinator = {} as robot.RobotCoordinator
     public robotType: RobotType = RobotType.RandomWalkDispersion
@@ -25,18 +25,16 @@ export class Model {
     }
 
     generateGraph () {
-      let attempts = this.maxNumberOfGraphGenerationAttempts
       switch (this.graphType) {
         case GraphType.ErdosRenyiRandom:
-          do {
-            this._graph = GraphGenerator.generateErdosRenyiRandomGraph(
-              this.nodeCount,
-              this.edgeProbability,
-              this.isDirected,
-              this.allowSelfLoops
-            )
-          } while (this.requireConnected && !this.graph.isConnected() && --attempts > 0)
-          if (attempts === 0) { throw new Error('Could not generate a connected graph') }
+          this._graph = GraphGenerator.generateErdosRenyiRandomGraph(
+            this.nodeCount,
+            this.edgeProbability,
+            this.isDirected,
+            this.allowSelfLoops,
+            this.requireConnected,
+            this.maxNumberOfGraphGenerationAttempts
+          )
           break
         case GraphType.Path:
           this._graph = GraphGenerator.generatePath(this.nodeCount, this.isDirected)
@@ -46,6 +44,9 @@ export class Model {
           break
         case GraphType.Complete:
           this._graph = GraphGenerator.generateCompleteGraph(this.nodeCount, this.isDirected, this.allowSelfLoops)
+          break
+        case GraphType.ArbitraryTree:
+          this._graph = GraphGenerator.generateArbitraryTree(this.nodeCount, this.isDirected)
           break
         default:
           throw new Error(`Invalid graph type: ${this.graphType}`)

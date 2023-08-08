@@ -196,22 +196,29 @@ export class Graph {
 }
 
 export class GraphGenerator {
-  static generateErdosRenyiRandomGraph (nodeCount: number, edgeProbability: number, isDirected = false, allowSelfLoops = false): Graph {
-    const graph = new Graph(isDirected)
+  static generateErdosRenyiRandomGraph (nodeCount: number, edgeProbability: number, isDirected = false, allowSelfLoops = false, requireConnected = false, maxAttempts = 10): Graph {
+    let graph: Graph
 
-    // Add nodes
-    for (let i = 0; i < nodeCount; ++i) {
-      graph.addNode()
-    }
+    do {
+      graph = new Graph(isDirected)
 
-    // Add edges
-    for (let i = 0; i < nodeCount; ++i) {
-      for (let j = isDirected ? 0 : i; j < nodeCount; ++j) {
-        if ((i !== j || allowSelfLoops) && Math.random() < edgeProbability) {
-          graph.addEdge(i, j)
+      // Add nodes
+      for (let i = 0; i < nodeCount; ++i) {
+        graph.addNode()
+      }
+
+      // Add edges
+      for (let i = 0; i < nodeCount; ++i) {
+        for (let j = isDirected ? 0 : i; j < nodeCount; ++j) {
+          if ((i !== j || allowSelfLoops) && Math.random() < edgeProbability) {
+            graph.addEdge(i, j)
+          }
         }
       }
-    }
+
+      requireConnected &&= !graph.isConnected() && --maxAttempts > 0
+    } while (requireConnected)
+    if (maxAttempts === 0) { throw new Error('Could not generate a connected graph') }
 
     return graph
   }
@@ -255,6 +262,23 @@ export class GraphGenerator {
           graph.addEdge(i, j)
         }
       }
+    }
+
+    return graph
+  }
+
+  static generateArbitraryTree (nodeCount: number, isDirected = false): Graph {
+    const graph = new Graph(isDirected)
+
+    // Add nodes
+    for (let i = 0; i < nodeCount; ++i) {
+      graph.addNode()
+    }
+
+    // Add edges
+    for (let i = 1; i < nodeCount; ++i) {
+      const randomNode = Math.floor(Math.random() * i)
+      graph.addEdge(randomNode, i)
     }
 
     return graph

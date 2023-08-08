@@ -11,18 +11,18 @@ const model = new Model()
 // Will get model properties from GUI
 
 // Graph
-model.graphType = GraphType.ErdosRenyiRandom
+model.graphType = GraphType.ArbitraryTree
 model.nodeCount = 20
 model.edgeProbability = 0.1
 model.isDirected = false
 model.allowSelfLoops = false
 model.requireConnected = true
-model.maxNumberOfGraphGenerationAttempts = 100
+model.maxNumberOfGraphGenerationAttempts = 10
 model.generateGraph()
 
 // Visual graph
 const showGraph = true
-const nodeLabelsAreVisible = false
+const nodeLabelsAreVisible = true
 const portLabelsAreVisible = true
 const graphWidth = 1000
 const graphHeight = 700
