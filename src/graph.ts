@@ -310,4 +310,21 @@ export class GraphGenerator {
 
     return graph
   }
+
+  static generateBinaryTree (nodeCount: number, isDirected = false): Graph {
+    const graph = new Graph(isDirected)
+
+    // Add nodes
+    for (let i = 0; i < nodeCount; ++i) {
+      graph.addNode()
+    }
+
+    // Add edges
+    for (let i = 1; i < nodeCount; ++i) {
+      const parentNode = Math.floor((i - 1) / 2)
+      graph.addEdge(parentNode, i)
+    }
+
+    return graph
+  }
 }

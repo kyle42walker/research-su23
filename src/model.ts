@@ -1,7 +1,7 @@
 import { Graph, GraphGenerator } from './graph'
 import * as robot from './robot'
 
-export enum GraphType { Path, Cycle, Complete, ErdosRenyiRandom, ArbitraryTree }
+export enum GraphType { Path, Cycle, Complete, ErdosRenyiRandom, ArbitraryTree, BinaryTree }
 export enum RobotType { RandomWalkDispersion, RandomWalkExploration }
 
 export class Model {
@@ -47,6 +47,9 @@ export class Model {
           break
         case GraphType.ArbitraryTree:
           this._graph = GraphGenerator.generateArbitraryTree(this.nodeCount, this.isDirected)
+          break
+        case GraphType.BinaryTree:
+          this._graph = GraphGenerator.generateBinaryTree(this.nodeCount, this.isDirected)
           break
         default:
           throw new Error(`Invalid graph type: ${this.graphType}`)

@@ -11,7 +11,7 @@ const model = new Model()
 // Will get model properties from GUI
 
 // Graph
-model.graphType = GraphType.ArbitraryTree
+model.graphType = GraphType.BinaryTree
 model.nodeCount = 20
 model.edgeProbability = 0.1
 model.isDirected = false
@@ -28,8 +28,6 @@ const graphWidth = 1000
 const graphHeight = 700
 const vng = new VisualGraph(model.graph, graphWidth, graphHeight, LayoutType.TreeVerticalCenter)
 const data = vng.getData()
-
-console.log(data)
 
 // Robots
 model.robotType = RobotType.RandomWalkDispersion
@@ -55,17 +53,17 @@ const selectedRobot = ref(null)
 const paths: vNG.Paths = {}
 
 function onChange (event) {
-  // console.log(event.value)
-  if (event.value === null) {
+  const robot = event.value
+  if (robot === null) {
     return
   }
-  this.paths = VisualGraph.getPath(event.value, model.graph)
+  this.paths = VisualGraph.getPath(robot, model.graph)
   Object.keys(data.nodes).forEach(key => {
     data.nodes[key].color = '#99ccff'
   })
-  data.nodes[event.value.currentNode.toString()].color = '#ff0000'
-  console.log(event.value)
-  console.log(paths[event.value.id.toString()])
+  data.nodes[robot.currentNode.toString()].color = '#ff0000'
+  console.log(robot)
+  console.log(this.paths[robot.id.toString()])
   console.log(data)
 }
 
