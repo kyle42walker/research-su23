@@ -76,6 +76,10 @@ export class Graph {
       if (reverseEdge) { reverseEdge.weight = weight }
     }
 
+    getNodeIds (): number[] {
+      return this.nodes.map((_, i) => i)
+    }
+
     // Time complexity: O(|1|)
     getNodeWeight (nodeId: number): number {
       return this.nodes[nodeId].weight
@@ -166,6 +170,29 @@ export class Graph {
       }
 
       return shortestPath.length - 1
+    }
+
+    getDepth (rootId: number): number {
+      const visited: boolean[] = new Array(this.getNodeCount()).fill(false)
+      const queue: number[] = []
+      const depth: number[] = []
+
+      queue.push(rootId)
+      depth[rootId] = 0
+
+      while (queue.length > 0) {
+        const currentNode = queue.shift() as number
+        visited[currentNode] = true
+
+        this.getAdjacentNodes(currentNode).forEach((adjacentNode) => {
+          if (!visited[adjacentNode]) {
+            queue.push(adjacentNode)
+            depth[adjacentNode] = depth[currentNode] + 1
+          }
+        })
+      }
+
+      return Math.max(...depth)
     }
 
     // Time complexity: O(|V| + |E|)

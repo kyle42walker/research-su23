@@ -26,8 +26,10 @@ const nodeLabelsAreVisible = true
 const portLabelsAreVisible = true
 const graphWidth = 1000
 const graphHeight = 700
-const vng = new VisualGraph(model.graph, graphWidth, graphHeight, LayoutType.Circular)
+const vng = new VisualGraph(model.graph, graphWidth, graphHeight, LayoutType.TreeVerticalCenter)
 const data = vng.getData()
+
+console.log(data)
 
 // Robots
 model.robotType = RobotType.RandomWalkDispersion
