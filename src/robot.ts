@@ -8,7 +8,7 @@ export type Robot = {
   portsTraversed: number[]
 }
 
-type RobotWithState = Robot & { state: 'active' | 'inactive' }
+type TwoStateRobot = Robot & { state: 'active' | 'inactive' }
 
 // Manages the robots and their movement
 export abstract class RobotCoordinator {
@@ -30,7 +30,7 @@ export abstract class RobotCoordinator {
 
 // A robot coordinator that implements a random walk dispersion algorithm
 export class RandomWalkDispersionRobotCoordinator extends RobotCoordinator {
-  robots: RobotWithState[] = []
+  robots: TwoStateRobot[] = []
 
   createRobots (numberOfRobots: number, startingNode: number) {
     for (let i = 0; i < numberOfRobots; ++i) {
@@ -55,8 +55,15 @@ export class RandomWalkDispersionRobotCoordinator extends RobotCoordinator {
         return // Continue forEach loop
       }
 
+      // In directed graphs, the robot may get stuck in a leaf node
+      const numberOfPorts = this.graph.getNumberOfPorts(robot.currentNode)
+      if (numberOfPorts === 0) {
+        robot.state = 'inactive'
+        return // Continue forEach loop
+      }
+
       // Move the robot to a random adjacent node
-      const port = Math.floor(Math.random() * this.graph.getNumberOfPorts(robot.currentNode))
+      const port = Math.floor(Math.random() * numberOfPorts)
       robot.currentNode = this.graph.getAdjacentNodeFromPort(robot.currentNode, port)
       robot.portsTraversed.push(port)
     })
@@ -73,6 +80,49 @@ export class RandomWalkDispersionRobotCoordinator extends RobotCoordinator {
 
 // A robot coordinator that implements a random walk exploration algorithm
 export class RandomWalkExplorationRobotCoordinator extends RobotCoordinator {
+  robots: TwoStateRobot[] = []
+  createRobots (numberOfRobots: number, startingNode: number) {
+    for (let i = 0; i < numberOfRobots; ++i) {
+      this.robots.push({
+        id: this.robotCount++,
+        startNode: startingNode,
+        currentNode: startingNode,
+        portsTraversed: [],
+        state: 'active'
+      })
+    }
+  }
+
+  step () {
+    this.robots.forEach((robot) => {
+      if (!this.visitedNodes[robot.currentNode]) {
+        this.visitedNodes[robot.currentNode] = true
+      }
+
+      // In directed graphs, the robot may get stuck in a leaf node
+      const numberOfPorts = this.graph.getNumberOfPorts(robot.currentNode)
+      if (numberOfPorts === 0) {
+        robot.state = 'inactive'
+        return // Continue forEach loop
+      }
+
+      // Move the robot to a random adjacent node
+      const port = Math.floor(Math.random() * numberOfPorts)
+      robot.currentNode = this.graph.getAdjacentNodeFromPort(robot.currentNode, port)
+      robot.portsTraversed.push(port)
+    })
+
+    ++this.stepNumber
+  }
+
+  run () {
+    while (this.visitedNodes.includes(false) && this.robots.some((robot) => robot.state === 'active')) {
+      this.step()
+    }
+  }
+}
+
+export class TreeExplorationWithGlobalCommunicationRobotCoordinator extends RobotCoordinator {
   createRobots (numberOfRobots: number, startingNode: number) {
     for (let i = 0; i < numberOfRobots; ++i) {
       this.robots.push({
@@ -85,6 +135,13 @@ export class RandomWalkExplorationRobotCoordinator extends RobotCoordinator {
   }
 
   step () {
+    // // Indicies of visited nodes correspond with nodeIds in the graph
+    // let i = 0
+    // // Get index of next visited node
+    // while(this.visitedNodes.indexOf(true, i) !== -1) {
+    //   this.graph.getChildNodes(this.graph.nodes[i])
+    // }
+
     this.robots.forEach((robot) => {
       if (!this.visitedNodes[robot.currentNode]) {
         this.visitedNodes[robot.currentNode] = true

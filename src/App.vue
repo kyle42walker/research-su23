@@ -12,7 +12,7 @@ const model = new Model()
 
 // Graph
 model.graphType = GraphType.BinaryTree
-model.nodeCount = 20
+model.nodeCount = 31
 model.edgeProbability = 0.1
 model.isDirected = false
 model.allowSelfLoops = false
@@ -30,7 +30,7 @@ const vng = new VisualGraph(model.graph, graphWidth, graphHeight, LayoutType.Tre
 const data = vng.getData()
 
 // Robots
-model.robotType = RobotType.RandomWalkDispersion
+model.robotType = RobotType.RandomWalkExploration
 model.robotCount = 20
 model.robotStartingNode = 0
 model.generateRobots()
@@ -50,7 +50,9 @@ Object.keys(data.nodes).forEach(key => {
 // const selectedRobot = ref(model.robotCoordinator.robots[0])
 // const paths: vNG.Paths = VisualGraph.getPath(selectedRobot.value, model.graph)
 const selectedRobot = ref(null)
-const paths: vNG.Paths = {}
+// const paths: vNG.Paths = {}
+const paths: vNG.Paths = { p: { edges: ['0-1', '0-1', '0-1', '0-1', '1-4'] } }
+// const paths: vNG.Paths = { p: { edges: ['0-1', '0-1', '0-1', '1-4'] } }
 
 function onChange (event) {
   const robot = event.value
@@ -112,7 +114,7 @@ function onChange (event) {
     </template>
   </v-network-graph>
   <!-- <Listbox v-model="selectedRobot" @change="onChange($event)" :options="model.robotCoordinator.robots" optionLabel="id"/> -->
-  <Listbox v-model="selectedRobot" @change="onChange($event)" :options="model.robotCoordinator.robots" optionLabel=""/>
+  <Listbox v-model="selectedRobot" @change="onChange($event)" :options="model.robotCoordinator.robots" optionLabel="" />
   <!-- <robotSelector :model="model"/> -->
 </template>
 
