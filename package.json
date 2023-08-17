@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "core-js": "^3.8.3",
+    "d3-force": "^3.0.0",
     "element-ui": "^2.15.13",
     "primevue": "^3.29.2",
     "v-network-graph": "^0.9.3",

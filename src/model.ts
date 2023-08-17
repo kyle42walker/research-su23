@@ -2,7 +2,7 @@ import { Graph, GraphGenerator } from './graph'
 import * as robot from './robot'
 
 export enum GraphType { Path, Cycle, Complete, ErdosRenyiRandom, ArbitraryTree, BinaryTree }
-export enum RobotType { RandomWalkDispersion, RandomWalkExploration }
+export enum RobotType { RandomWalkDispersion, RandomWalkExploration, TreeExplorationGlobal }
 
 export class Model {
     private _graph: Graph = {} as Graph
@@ -64,6 +64,10 @@ export class Model {
           break
         case RobotType.RandomWalkExploration:
           this.robotCoordinator = new robot.RandomWalkExplorationRobotCoordinator(this.graph)
+          this.robotCoordinator.createRobots(this.robotCount, this.robotStartingNode)
+          break
+        case RobotType.TreeExplorationGlobal:
+          this.robotCoordinator = new robot.TreeExplorationWithGlobalCommunicationRobotCoordinator(this.graph)
           this.robotCoordinator.createRobots(this.robotCount, this.robotStartingNode)
           break
         default:

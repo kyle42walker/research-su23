@@ -114,6 +114,11 @@ export class Graph {
       return this.getAdjacentNodes(nodeId).filter(node => node !== parentId)
     }
 
+    // Time complexity: O(|D|)
+    getChildPorts (nodeId: number, parentPort: number): number[] {
+      return [...Array(this.getNumberOfPorts(nodeId)).keys()].filter(port => port !== parentPort)
+    }
+
     // Time complexity: O(1)
     // Ports are the indices of the edges in the node's edge array
     getNumberOfPorts (nodeId: number): number {

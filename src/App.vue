@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import * as vNG from 'v-network-graph'
+import {
+  ForceLayout,
+  ForceNodeDatum,
+  ForceEdgeDatum
+} from 'v-network-graph/lib/force-layout'
 import { Model, GraphType, RobotType } from './model'
 import { VisualGraph, LayoutType } from './visual_graph'
 import Listbox from 'primevue/listbox'
@@ -11,26 +16,27 @@ const model = new Model()
 // Will get model properties from GUI
 
 // Graph
-model.graphType = GraphType.BinaryTree
+model.graphType = GraphType.ArbitraryTree
 model.nodeCount = 31
 model.edgeProbability = 0.1
-model.isDirected = false
+model.isDirected = true
 model.allowSelfLoops = false
 model.requireConnected = true
 model.maxNumberOfGraphGenerationAttempts = 10
 model.generateGraph()
 
 // Visual graph
+const layoutType = LayoutType.TreeVerticalCenter
 const showGraph = true
 const nodeLabelsAreVisible = true
 const portLabelsAreVisible = true
 const graphWidth = 1000
 const graphHeight = 700
-const vng = new VisualGraph(model.graph, graphWidth, graphHeight, LayoutType.TreeVerticalCenter)
+const vng = new VisualGraph(model.graph, graphWidth, graphHeight, layoutType)
 const data = vng.getData()
 
 // Robots
-model.robotType = RobotType.RandomWalkExploration
+model.robotType = RobotType.TreeExplorationGlobal
 model.robotCount = 20
 model.robotStartingNode = 0
 model.generateRobots()
@@ -38,20 +44,40 @@ model.runRobots()
 
 // Config
 
+// // TEST -- IGNORE
+// const data = {
+//   nodes: {
+//     node1: { name: 'Node 1' },
+//     node2: { name: 'Node 2' },
+//     node3: { name: 'Node 3' }
+//   },
+//   layouts: {
+//     nodes: {
+//       node1: { x: 100, y: 100 },
+//       node2: { x: 300, y: -300 },
+//       node3: { x: 500, y: 100 }
+//     }
+//   },
+//   edges: {
+//     edge1: { source: 'node1', target: 'node2' },
+//     edge2: { source: 'node2', target: 'node3' }
+//   }
+// }
+// const paths: vNG.Paths = { p: { edges: ['edge1', 'edge1', 'edge1', 'edge2'] } }
+// // END TEST -- IGNORE
+
 // Iterate through all nodes and set color
 Object.keys(data.nodes).forEach(key => {
   data.nodes[key].color = '#99ccff'
 })
 
-// const paths = VisualGraph.getPath(model.robotCoordinator.robots[19], model.graph)
-// data.nodes[model.robotCoordinator.robots[19].currentNode.toString()].color = '#ff0000'
-
 // Initialize selected robot
 // const selectedRobot = ref(model.robotCoordinator.robots[0])
 // const paths: vNG.Paths = VisualGraph.getPath(selectedRobot.value, model.graph)
 const selectedRobot = ref(null)
-// const paths: vNG.Paths = {}
-const paths: vNG.Paths = { p: { edges: ['0-1', '0-1', '0-1', '0-1', '1-4'] } }
+const paths: vNG.Paths = {}
+
+// const paths: vNG.Paths = { p: { edges: ['0-1', '0-1', '0-1', '1-4'] } }
 // const paths: vNG.Paths = { p: { edges: ['0-1', '0-1', '0-1', '1-4'] } }
 
 function onChange (event) {
@@ -92,6 +118,22 @@ const configs = vNG.defineConfigs({
       animationSpeed: path => path.test ? -40 : 40
     }
   }
+  // view: {
+  //   layoutHandler: new ForceLayout({
+  //     positionFixedByDrag: true,
+  //     positionFixedByClickWithAltKey: true,
+  //     createSimulation: (d3, nodes, edges) => {
+  //       // d3-force parameters
+  //       const forceLink = d3.forceLink<ForceNodeDatum, ForceEdgeDatum>(edges).id(d => d.id)
+  //       return d3
+  //         .forceSimulation(nodes)
+  //         .force('edge', forceLink.distance(40).strength(0.5))
+  //         .force('charge', d3.forceManyBody().strength(-800))
+  //         .force('center', d3.forceCenter().strength(0.05))
+  //         .alphaMin(0.001)
+  //     }
+  //   })
+  // }
 })
 if (model.isDirected) { configs.edge.marker.target.type = 'arrow' }
 </script>
