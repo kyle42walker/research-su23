@@ -101,9 +101,6 @@ export class Model {
     get maxNumberOfGraphGenerationAttempts (): number { return this._maxNumberOfGraphGenerationAttempts }
     set maxNumberOfGraphGenerationAttempts (value: number) {
       if (value < 1) {
-        console.log(value)
-        console.log(value < 1)
-        console.log(this._maxNumberOfGraphGenerationAttempts)
         throw new Error('Max number of graph generation attempts must be positive')
       }
       this._maxNumberOfGraphGenerationAttempts = value

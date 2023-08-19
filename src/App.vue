@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import * as vNG from 'v-network-graph'
-import {
-  ForceLayout,
-  ForceNodeDatum,
-  ForceEdgeDatum
-} from 'v-network-graph/lib/force-layout'
+// import {
+//   ForceLayout,
+//   ForceNodeDatum,
+//   ForceEdgeDatum
+// } from 'v-network-graph/lib/force-layout'
 import { Model, GraphType, RobotType } from './model'
 import { VisualGraph, LayoutType } from './visual_graph'
 import Listbox from 'primevue/listbox'
+import Button from 'primevue/button'
 // import robotSelector from './RobotSelector.vue'
 import { ref } from 'vue'
 
@@ -19,7 +20,7 @@ const model = new Model()
 model.graphType = GraphType.ArbitraryTree
 model.nodeCount = 31
 model.edgeProbability = 0.1
-model.isDirected = true
+model.isDirected = false
 model.allowSelfLoops = false
 model.requireConnected = true
 model.maxNumberOfGraphGenerationAttempts = 10
@@ -40,11 +41,12 @@ model.robotType = RobotType.TreeExplorationGlobal
 model.robotCount = 20
 model.robotStartingNode = 0
 model.generateRobots()
-model.runRobots()
+// model.runRobots()
+// model.stepRobots()
 
 // Config
 
-// // TEST -- IGNORE
+// // PATH ERROR TEST -- IGNORE
 // const data = {
 //   nodes: {
 //     node1: { name: 'Node 1' },
@@ -64,7 +66,7 @@ model.runRobots()
 //   }
 // }
 // const paths: vNG.Paths = { p: { edges: ['edge1', 'edge1', 'edge1', 'edge2'] } }
-// // END TEST -- IGNORE
+// // END PATH ERROR TEST -- IGNORE
 
 // Iterate through all nodes and set color
 Object.keys(data.nodes).forEach(key => {
@@ -155,6 +157,7 @@ function onChange (event) {
         v-bind="slotProps" />
     </template>
   </v-network-graph>
+  <Button label="Step" @click="model.stepRobots()"/>
   <!-- <Listbox v-model="selectedRobot" @change="onChange($event)" :options="model.robotCoordinator.robots" optionLabel="id"/> -->
   <Listbox v-model="selectedRobot" @change="onChange($event)" :options="model.robotCoordinator.robots" optionLabel="" />
   <!-- <robotSelector :model="model"/> -->
