@@ -18,6 +18,7 @@ export class Model {
     public robotType: RobotType = RobotType.RandomWalkDispersion
     private _robotCount = 0
     private _robotStartingNode = 0
+    private _currentStep = 0
 
     constructor () {
       this.generateGraph()
@@ -116,5 +117,13 @@ export class Model {
     set robotStartingNode (value: number) {
       if (value < 0 || value >= this.nodeCount) { throw new Error('Starting node must be in [0, nodeCount)') }
       this._robotStartingNode = value
+    }
+
+    get stepCount (): number { return this.robotCoordinator.stepNumber }
+
+    get currentStep (): number { return this._currentStep }
+    set currentStep (value: number) {
+      if (value < 0 || value >= this.stepCount) { throw new Error('Current step must be in [0, stepCount)') }
+      this._currentStep = value
     }
 }

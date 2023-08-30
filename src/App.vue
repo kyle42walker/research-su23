@@ -7,8 +7,10 @@ import * as vNG from 'v-network-graph'
 // } from 'v-network-graph/lib/force-layout'
 import { Model, GraphType, RobotType } from './model'
 import { VisualGraph, LayoutType } from './visual_graph'
+import { Robot } from './robot'
 import Listbox from 'primevue/listbox'
 import Button from 'primevue/button'
+import Slider from 'primevue/slider'
 // import robotSelector from './RobotSelector.vue'
 import { ref } from 'vue'
 
@@ -34,15 +36,15 @@ const portLabelsAreVisible = true
 const graphWidth = 1000
 const graphHeight = 700
 const vng = new VisualGraph(model.graph, graphWidth, graphHeight, layoutType)
-const data = vng.getData()
+const data = ref(vng.getData())
 
 // Robots
 model.robotType = RobotType.TreeExplorationGlobal
-model.robotCount = 20
+model.robotCount = 5
 model.robotStartingNode = 0
 model.generateRobots()
-// model.runRobots()
-// model.stepRobots()
+model.runRobots()
+console.log(model.stepCount)
 
 // Config
 
@@ -69,33 +71,12 @@ model.generateRobots()
 // // END PATH ERROR TEST -- IGNORE
 
 // Iterate through all nodes and set color
-Object.keys(data.nodes).forEach(key => {
-  data.nodes[key].color = '#99ccff'
+Object.keys(data.value.nodes).forEach(key => {
+  data.value.nodes[key].color = '#99ccff'
 })
 
-// Initialize selected robot
-// const selectedRobot = ref(model.robotCoordinator.robots[0])
-// const paths: vNG.Paths = VisualGraph.getPath(selectedRobot.value, model.graph)
-const selectedRobot = ref(null)
-const paths: vNG.Paths = {}
-
 // const paths: vNG.Paths = { p: { edges: ['0-1', '0-1', '0-1', '1-4'] } }
 // const paths: vNG.Paths = { p: { edges: ['0-1', '0-1', '0-1', '1-4'] } }
-
-function onChange (event) {
-  const robot = event.value
-  if (robot === null) {
-    return
-  }
-  this.paths = VisualGraph.getPath(robot, model.graph)
-  Object.keys(data.nodes).forEach(key => {
-    data.nodes[key].color = '#99ccff'
-  })
-  data.nodes[robot.currentNode.toString()].color = '#ff0000'
-  console.log(robot)
-  console.log(this.paths[robot.id.toString()])
-  console.log(data)
-}
 
 const configs = vNG.defineConfigs({
   node: {
@@ -138,6 +119,37 @@ const configs = vNG.defineConfigs({
   // }
 })
 if (model.isDirected) { configs.edge.marker.target.type = 'arrow' }
+
+// Initialize selected robot
+const selectedRobot = ref(null)
+const paths: vNG.Paths = {}
+
+// Handle new robot selection
+function onRobotSelected (event) {
+  const robot = event.value as Robot
+
+  // Reset node colors
+  Object.keys(data.value.nodes).forEach(key => {
+    data.value.nodes[key].color = '#99ccff'
+  })
+
+  // Remove path if no robot is selected
+  if (robot === null) {
+    this.paths = {}
+    return
+  }
+
+  // Update path for new robot position
+  this.paths = VisualGraph.getPath(robot.id, robot.startNode, robot.portsTraversed, this.model.graph)
+
+  // Mark current node
+  data.value.nodes[robot.currentNode.toString()].color = '#ff0000'
+
+  // Print robot info
+  // console.log(robot)
+  // console.log(this.paths[robot.id.toString()])
+  // console.log(data.value)
+}
 </script>
 
 <!-- <script methods lang="ts">
@@ -157,9 +169,10 @@ function onChange (event) {
         v-bind="slotProps" />
     </template>
   </v-network-graph>
+  <Slider v-model="model.currentStep" :min="0" :max="model.stepCount" />
   <Button label="Step" @click="model.stepRobots()"/>
   <!-- <Listbox v-model="selectedRobot" @change="onChange($event)" :options="model.robotCoordinator.robots" optionLabel="id"/> -->
-  <Listbox v-model="selectedRobot" @change="onChange($event)" :options="model.robotCoordinator.robots" optionLabel="" />
+  <Listbox v-model="selectedRobot" @change="onRobotSelected($event)" :options="model.robotCoordinator.robots" optionLabel="" />
   <!-- <robotSelector :model="model"/> -->
 </template>
 
