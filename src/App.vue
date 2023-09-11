@@ -39,12 +39,14 @@ const vng = new VisualGraph(model.graph, graphWidth, graphHeight, layoutType)
 const data = ref(vng.getData())
 
 // Robots
-model.robotType = RobotType.TreeExplorationGlobal
-model.robotCount = 5
+model.robotType = RobotType.RandomWalkExploration
+model.robotCount = 1000
 model.robotStartingNode = 0
+model.lambda = 5
+model.edgeSurvivalProbability = 0.5
 model.generateRobots()
 model.runRobots()
-console.log(model.stepCount)
+console.log('step count = ' + model.stepCount)
 
 // Config
 

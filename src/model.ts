@@ -19,6 +19,8 @@ export class Model {
     private _robotCount = 0
     private _robotStartingNode = 0
     private _currentStep = 0
+    private _lambda = Infinity // Number of steps between edge shuffling
+    private _edgeSurvivalProbability = 1 // Probability that an edge survives shuffling
 
     constructor () {
       this.generateGraph()
@@ -60,15 +62,15 @@ export class Model {
     generateRobots () {
       switch (this.robotType) {
         case RobotType.RandomWalkDispersion:
-          this.robotCoordinator = new robot.RandomWalkDispersionRobotCoordinator(this.graph)
+          this.robotCoordinator = new robot.RandomWalkDispersionRobotCoordinator(this.graph, this.lambda, this.edgeSurvivalProbability)
           this.robotCoordinator.createRobots(this.robotCount, this.robotStartingNode)
           break
         case RobotType.RandomWalkExploration:
-          this.robotCoordinator = new robot.RandomWalkExplorationRobotCoordinator(this.graph)
+          this.robotCoordinator = new robot.RandomWalkExplorationRobotCoordinator(this.graph, this.lambda, this.edgeSurvivalProbability)
           this.robotCoordinator.createRobots(this.robotCount, this.robotStartingNode)
           break
         case RobotType.TreeExplorationGlobal:
-          this.robotCoordinator = new robot.TreeExplorationWithGlobalCommunicationRobotCoordinator(this.graph)
+          this.robotCoordinator = new robot.TreeExplorationWithGlobalCommunicationRobotCoordinator(this.graph, this.lambda, this.edgeSurvivalProbability)
           this.robotCoordinator.createRobots(this.robotCount, this.robotStartingNode)
           break
         default:
@@ -125,5 +127,17 @@ export class Model {
     set currentStep (value: number) {
       if (value < 0 || value >= this.stepCount) { throw new Error('Current step must be in [0, stepCount)') }
       this._currentStep = value
+    }
+
+    get lambda (): number { return this._lambda }
+    set lambda (value: number) {
+      if (!((value > 0 && Number.isInteger(value)) || value === Infinity)) { throw new Error('Lambda must be a positive integer or Infinity') }
+      this._lambda = value
+    }
+
+    get edgeSurvivalProbability (): number { return this._edgeSurvivalProbability }
+    set edgeSurvivalProbability (value: number) {
+      if (value < 0 || value > 1) { throw new Error('Edge survival probability must be in [0, 1]') }
+      this._edgeSurvivalProbability = value
     }
 }

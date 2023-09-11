@@ -76,6 +76,21 @@ export class Graph {
       if (reverseEdge) { reverseEdge.weight = weight }
     }
 
+    setRandomEdgeWeightSigns (edgeProbability: number) {
+      this.nodes.forEach((node, sourceId) => {
+        node.edges.forEach((edge) => {
+          // Skip redundant edges if the graph is undirected
+          if (edge.targetNode < sourceId && !this.isDirected) { return }
+
+          if (Math.random() < edgeProbability) {
+            edge.weight = -Math.abs(edge.weight)
+          } else {
+            edge.weight = Math.abs(edge.weight)
+          }
+        })
+      })
+    }
+
     getNodeIds (): number[] {
       return this.nodes.map((_, i) => i)
     }
@@ -91,6 +106,10 @@ export class Graph {
       if (edge) { return edge.weight }
 
       return 0
+    }
+
+    getEdgeWeightFromPort (nodeId: number, port: number): number {
+      return this.nodes[nodeId].edges[port].weight
     }
 
     // Time complexity: O(1)
