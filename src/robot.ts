@@ -9,7 +9,7 @@ export type Robot = {
 }
 
 type RandomWalkRobot = Robot & { state: 'active' | 'discarded' }
-// type LocalCommunicationRobot = Robot & { state: 'exploring' | 'notifying' | 'waiting to notify' | 'discarded' }
+type LocalCommunicationRobot = Robot & { state: 'exploring' | 'notifying' | 'waiting to notify' | 'discarded' }
 
 // Manages the robots and their movement
 export abstract class RobotCoordinator {
@@ -94,6 +94,8 @@ export class RandomWalkDispersionRobotCoordinator extends RobotCoordinator {
 
       const port = Math.floor(Math.random() * numberOfPorts)
       if (this.graph.getEdgeWeightFromPort(robot.currentNode, port) < 0) {
+        // Mark the intended port as negative to indicate that it is not traversable
+        robot.portsTraversed.push(-port - 100) // -100 to avoid collisions with other negative ports
         // Do nothing this step for this robot -- it will try again next step
         return // Continue forEach loop
       }
@@ -144,8 +146,9 @@ export class RandomWalkExplorationRobotCoordinator extends RobotCoordinator {
       // Move the robot to a random adjacent node
       const port = Math.floor(Math.random() * numberOfPorts)
       if (this.graph.getEdgeWeightFromPort(robot.currentNode, port) < 0) {
+        // Mark the intended port as negative to indicate that it is not traversable
+        robot.portsTraversed.push(-port - 100) // -100 to avoid collisions with other negative ports
         // Do nothing this step for this robot -- it will try again next step
-        // robot.portsTraversed.push(-1)
         return // Continue forEach loop
       }
       robot.currentNode = this.graph.getAdjacentNodeFromPort(robot.currentNode, port)
@@ -302,66 +305,66 @@ export class TreeExplorationWithGlobalCommunicationRobotCoordinator extends Robo
   }
 }
 
-// // A robot coordinator that implements fast collaborative exploration with local communication
-// export class TreeExplorationWithLocalCommunicationRobotCoordinator extends RobotCoordinator {
-//   robots: LocalCommunicationRobot[] = []
+// A robot coordinator that implements fast collaborative exploration with local communication
+export class TreeExplorationWithLocalCommunicationRobotCoordinator extends RobotCoordinator {
+  robots: LocalCommunicationRobot[] = []
 
-//   // Number of robots to create each step
-//   numberOfRobots = 0
+  // Number of robots to create each step
+  numberOfRobots = 0
 
-//   createRobots (numberOfRobots: number, startingNode: number): void {
-//     super.createRobots(numberOfRobots, startingNode)
+  createRobots (numberOfRobots: number, startingNode: number): void {
+    super.createRobots(numberOfRobots, startingNode)
 
-//     // numberOfRobots is updated here to maintain consistent function calls with other robot coordinators
-//     this.numberOfRobots = numberOfRobots
-//   }
+    // numberOfRobots is updated here to maintain consistent function calls with other robot coordinators
+    this.numberOfRobots = numberOfRobots
+  }
 
-//   initializeRobot (robot: LocalCommunicationRobot): void {
-//     robot.state = 'exploring'
-//   }
+  initializeRobot (robot: LocalCommunicationRobot): void {
+    robot.state = 'exploring'
+  }
 
-//   step () {
-//     // Get indices of visited nodes
-//     const visitedNodeIds = this.visitedNodes.map((visited, index) => visited ? index : -1).filter((index) => index !== -1)
+  step () {
+    // Get indices of visited nodes
+    const visitedNodeIds = this.visitedNodes.map((visited, index) => visited ? index : -1).filter((index) => index !== -1)
 
-//     visitedNodeIds.forEach((visitedNode) => {
-//       // Get robots on this node
-//       const robotsOnNode = this.robots.filter((robot) => robot.currentNode === visitedNode)
-//       // const exploringRobots = robotsOnNode.filter((robot) => robot.state === 'exploring')
-//       const notifyingRobots = robotsOnNode.filter((robot) => robot.state === 'notifying')
-//       const waitingRobots = robotsOnNode.filter((robot) => robot.state === 'waiting to notify')
+    visitedNodeIds.forEach((visitedNode) => {
+      // Get robots on this node
+      const robotsOnNode = this.robots.filter((robot) => robot.currentNode === visitedNode)
+      // const exploringRobots = robotsOnNode.filter((robot) => robot.state === 'exploring')
+      const notifyingRobots = robotsOnNode.filter((robot) => robot.state === 'notifying')
+      const waitingRobots = robotsOnNode.filter((robot) => robot.state === 'waiting to notify')
 
-//       // Check if it is a leaf node
-//       if (this.graph.getNumberOfPorts(visitedNode) === 1) { // Only the parent port
-//         // TODO: Handle leaf nodes
-//         return // Continue forEach loop
-//       }
+      // Check if it is a leaf node
+      if (this.graph.getNumberOfPorts(visitedNode) === 1) { // Only the parent port
+        // TODO: Handle leaf nodes
+        return // Continue forEach loop
+      }
 
-//       // For all nodes except the root, move notifying robots to the parent node
-//       if (visitedNode !== 0) { // Assumes root is always node id 0
-//         notifyingRobots.forEach((robot) => {
-//           // Assumes parent is always at port 0
-//           robot.currentNode = this.graph.getAdjacentNodeFromPort(robot.currentNode, 0)
-//           robot.portsTraversed.push(0)
-//         })
-//       }
+      // For all nodes except the root, move notifying robots to the parent node
+      if (visitedNode !== 0) { // Assumes root is always node id 0
+        notifyingRobots.forEach((robot) => {
+          // Assumes parent is always at port 0
+          robot.currentNode = this.graph.getAdjacentNodeFromPort(robot.currentNode, 0)
+          robot.portsTraversed.push(0)
+        })
+      }
 
-//       // Prepare second notifying robot
-//       waitingRobots.forEach((robot) => {
-//         robot.state = 'notifying'
-//       })
+      // Prepare second notifying robot
+      waitingRobots.forEach((robot) => {
+        robot.state = 'notifying'
+      })
 
-//       // if (exploringRobots.length >= 2 && )
-//     })
-//   }
+      // if (exploringRobots.length >= 2 && )
+    })
+  }
 
-//   run () {
-//     // Run until all nodes have been visited
-//     while (this.visitedNodes.includes(false)) {
-//       this.step()
-//     }
-//   }
-// }
+  run () {
+    // Run until all nodes have been visited
+    while (this.visitedNodes.includes(false)) {
+      this.step()
+    }
+  }
+}
 
 // // A robot coordinator that implements fast collaborative exploration with local communication
 // export class TreeExplorationWithLocalCommunicationRobotCoordinator extends RobotCoordinator {

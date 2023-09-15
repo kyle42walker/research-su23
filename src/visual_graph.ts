@@ -33,6 +33,9 @@ export class VisualGraph {
       let targetNode
       let edgeId
       const edges = portsTraversed.map((port) => {
+        // Ignore negative ports -- these indicate removed edges
+        if (port < 0) { return '' }
+        
         targetNode = graph.getAdjacentNodeFromPort(sourceNode, port)
 
         // Undirected graph edges are stored in the format "{smallerNodeId}-{largerNodeId}"
