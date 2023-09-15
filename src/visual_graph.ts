@@ -1,4 +1,4 @@
-import { Graph } from './graph'
+import { Graph, Vertex } from './graph'
 import { Nodes, Edges, Layouts, Paths } from 'v-network-graph'
 
 export enum LayoutType { Random, Circular, LinearHorizontal, LinearVertical, TreeVerticalLeft, TreeVerticalCenter, ForceDirected }
@@ -12,6 +12,12 @@ export class VisualGraph {
       this.nodes = VisualGraph.extractNodes(graph)
       this.edges = VisualGraph.extractEdges(graph)
       this.layouts = VisualGraph.generateLayouts(graph, width, height, layoutType)
+    }
+
+    updateEdgeWeights (graphNodes: Vertex[]) {
+      Object.values(this.edges).forEach((edge) => {
+        edge.weight = graphNodes[parseInt(edge.source)].edges[parseInt(edge.sourcePort)].weight
+      })
     }
 
     getData () {

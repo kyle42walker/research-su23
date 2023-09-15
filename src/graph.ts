@@ -1,5 +1,5 @@
 type Edge = {weight: number, targetNode: number}
-type Vertex = {weight: number, edges: Edge[]}
+export type Vertex = {weight: number, edges: Edge[]}
 
 export class Graph {
     nodes: Vertex[] = []
@@ -7,6 +7,10 @@ export class Graph {
 
     constructor (isDirected = false) {
       this.isDirected = isDirected
+    }
+
+    deepCopyNodes (): Vertex[] {
+      return JSON.parse(JSON.stringify(this.nodes))
     }
 
     // Time complexity: O(1) amortized

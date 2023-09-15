@@ -1,4 +1,4 @@
-import { Graph } from './graph'
+import { Graph, Vertex } from './graph'
 
 // Information required to track a robot in the graph
 export type Robot = {
@@ -9,11 +9,12 @@ export type Robot = {
 }
 
 type RandomWalkRobot = Robot & { state: 'active' | 'discarded' }
-type LocalCommunicationRobot = Robot & { state: 'exploring' | 'notifying' | 'waiting to notify' | 'discarded' }
+// type LocalCommunicationRobot = Robot & { state: 'exploring' | 'notifying' | 'waiting to notify' | 'discarded' }
 
 // Manages the robots and their movement
 export abstract class RobotCoordinator {
   graph: Graph
+  graphHistory: { stepNumber: number, graphNodes: Vertex[] }[] = []
   visitedNodes: boolean[]
   robots: Robot[] = []
   robotIdCount = 0
@@ -64,6 +65,7 @@ export class RandomWalkDispersionRobotCoordinator extends RobotCoordinator {
   step () {
     // Remove random edges every lambda steps by negating edge weights
     if (this.stepNumber % this.lambda === 0) {
+      this.graphHistory.push({ stepNumber: this.stepNumber, graphNodes: this.graph.deepCopyNodes() })
       this.graph.setRandomEdgeWeightSigns(this.edgeSurvivalProbability)
     }
 
@@ -93,7 +95,6 @@ export class RandomWalkDispersionRobotCoordinator extends RobotCoordinator {
       const port = Math.floor(Math.random() * numberOfPorts)
       if (this.graph.getEdgeWeightFromPort(robot.currentNode, port) < 0) {
         // Do nothing this step for this robot -- it will try again next step
-        robot.portsTraversed.push(-1)
         return // Continue forEach loop
       }
       robot.currentNode = this.graph.getAdjacentNodeFromPort(robot.currentNode, port)
@@ -122,8 +123,8 @@ export class RandomWalkExplorationRobotCoordinator extends RobotCoordinator {
   step () {
     // Remove random edges every lambda steps by negating edge weights
     if (this.stepNumber % this.lambda === 0) {
+      this.graphHistory.push({ stepNumber: this.stepNumber, graphNodes: this.graph.deepCopyNodes() })
       this.graph.setRandomEdgeWeightSigns(this.edgeSurvivalProbability)
-      console.log(this.graph)
     }
 
     // Move all robots
@@ -144,7 +145,7 @@ export class RandomWalkExplorationRobotCoordinator extends RobotCoordinator {
       const port = Math.floor(Math.random() * numberOfPorts)
       if (this.graph.getEdgeWeightFromPort(robot.currentNode, port) < 0) {
         // Do nothing this step for this robot -- it will try again next step
-        robot.portsTraversed.push(-1)
+        // robot.portsTraversed.push(-1)
         return // Continue forEach loop
       }
       robot.currentNode = this.graph.getAdjacentNodeFromPort(robot.currentNode, port)

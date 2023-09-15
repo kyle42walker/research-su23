@@ -36,16 +36,20 @@ const portLabelsAreVisible = true
 const graphWidth = 1000
 const graphHeight = 700
 const vng = new VisualGraph(model.graph, graphWidth, graphHeight, layoutType)
-const data = ref(vng.getData())
+const nodes = ref(vng.nodes)
+const edges = ref(vng.edges)
+const layouts = ref(vng.layouts)
 
 // Robots
 model.robotType = RobotType.RandomWalkExploration
-model.robotCount = 1000
+model.robotCount = 10
 model.robotStartingNode = 0
 model.lambda = 5
 model.edgeSurvivalProbability = 0.5
 model.generateRobots()
-model.runRobots()
+
+// model.runRobots()
+// vng.updateEdgeWeights(model.graph.nodes)
 console.log('step count = ' + model.stepCount)
 
 // Config
@@ -73,8 +77,13 @@ console.log('step count = ' + model.stepCount)
 // // END PATH ERROR TEST -- IGNORE
 
 // Iterate through all nodes and set color
-Object.keys(data.value.nodes).forEach(key => {
-  data.value.nodes[key].color = '#99ccff'
+Object.keys(nodes.value).forEach(key => {
+  nodes.value[key].color = '#99ccff'
+})
+
+// Iterate through all edges and set color
+Object.keys(edges.value).forEach(key => {
+  edges.value[key].color = '#000000'
 })
 
 // const paths: vNG.Paths = { p: { edges: ['0-1', '0-1', '0-1', '1-4'] } }
@@ -90,7 +99,7 @@ const configs = vNG.defineConfigs({
   },
   edge: {
     gap: 12,
-    normal: { color: '#6699cc' },
+    normal: { color: edge => edge.color },
     marker: { target: { type: 'none' } }
   },
   path: {
@@ -131,8 +140,8 @@ function onRobotSelected (event) {
   const robot = event.value as Robot
 
   // Reset node colors
-  Object.keys(data.value.nodes).forEach(key => {
-    data.value.nodes[key].color = '#99ccff'
+  Object.keys(nodes.value).forEach(key => {
+    nodes.value[key].color = '#99ccff'
   })
 
   // Remove path if no robot is selected
@@ -145,12 +154,20 @@ function onRobotSelected (event) {
   this.paths = VisualGraph.getPath(robot.id, robot.startNode, robot.portsTraversed, this.model.graph)
 
   // Mark current node
-  data.value.nodes[robot.currentNode.toString()].color = '#ff0000'
+  nodes.value[robot.currentNode.toString()].color = '#ff0000'
 
   // Print robot info
   // console.log(robot)
   // console.log(this.paths[robot.id.toString()])
   // console.log(data.value)
+}
+
+function stepRobots () {
+  this.model.stepRobots()
+  this.vng.updateEdgeWeights(this.model.graph.nodes)
+  Object.keys(edges.value).forEach(key => {
+    edges.value[key].color = edges.value[key].weight > 0 ? '#000000' : '#FF0000'
+  })
 }
 </script>
 
@@ -161,7 +178,7 @@ function onChange (event) {
 </script> -->
 
 <template>
-  <v-network-graph v-if="showGraph" class=graph :nodes="data.nodes" :edges="data.edges" :layouts="data.layouts"
+  <v-network-graph v-if="showGraph" class=graph :nodes="nodes" :edges="edges" :layouts="layouts"
     :configs="configs" :paths="paths" :style="{ width: graphWidth + 'px', height: graphHeight + 'px' }">
     <template #edge-label="{ edge, ...slotProps}">
       <!-- <v-edge-label :text="edgeId" align="center" v-bind="slotProps" /> -->
@@ -172,7 +189,7 @@ function onChange (event) {
     </template>
   </v-network-graph>
   <Slider v-model="model.currentStep" :min="0" :max="model.stepCount" />
-  <Button label="Step" @click="model.stepRobots()"/>
+  <Button label="Step" @click="stepRobots()"/>
   <!-- <Listbox v-model="selectedRobot" @change="onChange($event)" :options="model.robotCoordinator.robots" optionLabel="id"/> -->
   <Listbox v-model="selectedRobot" @change="onRobotSelected($event)" :options="model.robotCoordinator.robots" optionLabel="" />
   <!-- <robotSelector :model="model"/> -->
