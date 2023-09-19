@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import * as vNG from 'v-network-graph'
-// import {
-//   ForceLayout,
-//   ForceNodeDatum,
-//   ForceEdgeDatum
-// } from 'v-network-graph/lib/force-layout'
+import {
+  ForceLayout,
+  ForceNodeDatum,
+  ForceEdgeDatum
+} from 'v-network-graph/lib/force-layout'
 import { Model, GraphType, RobotType } from './model'
 import { VisualGraph, LayoutType } from './visual_graph'
 import { Robot } from './robot'
@@ -29,7 +29,7 @@ model.maxNumberOfGraphGenerationAttempts = 10
 model.generateGraph()
 
 // Visual graph
-const layoutType = LayoutType.TreeVerticalCenter
+const layoutType = LayoutType.ForceDirected
 const showGraph = true
 const nodeLabelsAreVisible = true
 const portLabelsAreVisible = true
@@ -39,6 +39,13 @@ const vng = new VisualGraph(model.graph, graphWidth, graphHeight, layoutType)
 const nodes = ref(vng.nodes)
 const edges = ref(vng.edges)
 const layouts = ref(vng.layouts)
+
+// Force directed layout
+const fdEdgeDistance = 40
+const fdEdgeStrength = 0.6
+const fdChargeStrength = -800
+const fdCenterStrength = 0.99
+const fdAlphaMin = 0.001
 
 // Robots
 model.robotType = RobotType.RandomWalkExploration
@@ -54,28 +61,6 @@ console.log('step count = ' + model.stepCount)
 
 // Config
 
-// // PATH ERROR TEST -- IGNORE
-// const data = {
-//   nodes: {
-//     node1: { name: 'Node 1' },
-//     node2: { name: 'Node 2' },
-//     node3: { name: 'Node 3' }
-//   },
-//   layouts: {
-//     nodes: {
-//       node1: { x: 100, y: 100 },
-//       node2: { x: 300, y: -300 },
-//       node3: { x: 500, y: 100 }
-//     }
-//   },
-//   edges: {
-//     edge1: { source: 'node1', target: 'node2' },
-//     edge2: { source: 'node2', target: 'node3' }
-//   }
-// }
-// const paths: vNG.Paths = { p: { edges: ['edge1', 'edge1', 'edge1', 'edge2'] } }
-// // END PATH ERROR TEST -- IGNORE
-
 // Iterate through all nodes and set color
 Object.keys(nodes.value).forEach(key => {
   nodes.value[key].color = '#99ccff'
@@ -86,15 +71,10 @@ Object.keys(edges.value).forEach(key => {
   edges.value[key].color = '#000000'
 })
 
-// const paths: vNG.Paths = { p: { edges: ['0-1', '0-1', '0-1', '1-4'] } }
-// const paths: vNG.Paths = { p: { edges: ['0-1', '0-1', '0-1', '1-4'] } }
-
 const configs = vNG.defineConfigs({
   node: {
-    // normal: { type: 'circle', radius: 20, color: '#99ccff' },
     normal: { type: 'circle', radius: 20, color: node => node.color },
     hover: { color: '#88bbff' },
-    // label: { visible: false, fontSize: 8 }
     label: { visible: nodeLabelsAreVisible, fontSize: 8, text: node => node.name }
   },
   edge: {
@@ -112,23 +92,25 @@ const configs = vNG.defineConfigs({
       animationSpeed: path => path.test ? -40 : 40
     }
   }
-  // view: {
-  //   layoutHandler: new ForceLayout({
-  //     positionFixedByDrag: true,
-  //     positionFixedByClickWithAltKey: true,
-  //     createSimulation: (d3, nodes, edges) => {
-  //       // d3-force parameters
-  //       const forceLink = d3.forceLink<ForceNodeDatum, ForceEdgeDatum>(edges).id(d => d.id)
-  //       return d3
-  //         .forceSimulation(nodes)
-  //         .force('edge', forceLink.distance(40).strength(0.5))
-  //         .force('charge', d3.forceManyBody().strength(-800))
-  //         .force('center', d3.forceCenter().strength(0.05))
-  //         .alphaMin(0.001)
-  //     }
-  //   })
-  // }
 })
+if (layoutType === LayoutType.ForceDirected) {
+  configs.view = {
+    layoutHandler: new ForceLayout({
+      positionFixedByDrag: false,
+      positionFixedByClickWithAltKey: true,
+      createSimulation: (d3, nodes, edges) => {
+        // d3-force parameters
+        const forceLink = d3.forceLink<ForceNodeDatum, ForceEdgeDatum>(edges).id(d => d.id)
+        return d3
+          .forceSimulation(nodes)
+          .force('edge', forceLink.distance(fdEdgeDistance).strength(fdEdgeStrength))
+          .force('charge', d3.forceManyBody().strength(fdChargeStrength))
+          .force('center', d3.forceCenter(graphWidth / 2, graphHeight / 2).strength(fdCenterStrength))
+          .alphaMin(fdAlphaMin)
+      }
+    })
+  }
+}
 if (model.isDirected) { configs.edge.marker.target.type = 'arrow' }
 
 // Initialize selected robot
@@ -155,11 +137,6 @@ function onRobotSelected (event) {
 
   // Mark current node
   nodes.value[robot.currentNode.toString()].color = '#ff0000'
-
-  // Print robot info
-  // console.log(robot)
-  // console.log(this.paths[robot.id.toString()])
-  // console.log(data.value)
 }
 
 function stepRobots () {
@@ -171,15 +148,9 @@ function stepRobots () {
 }
 </script>
 
-<!-- <script methods lang="ts">
-function onChange (event) {
-  console.log(event.value)
-}
-</script> -->
-
 <template>
-  <v-network-graph v-if="showGraph" class=graph :nodes="nodes" :edges="edges" :layouts="layouts"
-    :configs="configs" :paths="paths" :style="{ width: graphWidth + 'px', height: graphHeight + 'px' }">
+  <v-network-graph v-if="showGraph" class=graph :nodes="nodes" :edges="edges" :layouts="layouts" :configs="configs"
+    :paths="paths" :style="{ width: graphWidth + 'px', height: graphHeight + 'px' }">
     <template #edge-label="{ edge, ...slotProps}">
       <!-- <v-edge-label :text="edgeId" align="center" v-bind="slotProps" /> -->
       <v-edge-label v-if="portLabelsAreVisible" :text="`${edge.sourcePort}`" align="source" vertical-align="above"
@@ -189,9 +160,10 @@ function onChange (event) {
     </template>
   </v-network-graph>
   <Slider v-model="model.currentStep" :min="0" :max="model.stepCount" />
-  <Button label="Step" @click="stepRobots()"/>
+  <Button label="Step" @click="stepRobots()" />
   <!-- <Listbox v-model="selectedRobot" @change="onChange($event)" :options="model.robotCoordinator.robots" optionLabel="id"/> -->
-  <Listbox v-model="selectedRobot" @change="onRobotSelected($event)" :options="model.robotCoordinator.robots" optionLabel="" />
+  <Listbox v-model="selectedRobot" @change="onRobotSelected($event)" :options="model.robotCoordinator.robots"
+    optionLabel="" />
   <!-- <robotSelector :model="model"/> -->
 </template>
 

@@ -35,7 +35,7 @@ export class VisualGraph {
       const edges = portsTraversed.map((port) => {
         // Ignore negative ports -- these indicate removed edges
         if (port < 0) { return '' }
-        
+
         targetNode = graph.getAdjacentNodeFromPort(sourceNode, port)
 
         // Undirected graph edges are stored in the format "{smallerNodeId}-{largerNodeId}"
@@ -101,6 +101,9 @@ export class VisualGraph {
           return LayoutGenerator.GenerateTreeVerticalLayout(graph, width, height, false)
         case LayoutType.TreeVerticalCenter:
           return LayoutGenerator.GenerateTreeVerticalLayout(graph, width, height, true)
+        case LayoutType.ForceDirected:
+          // Random graph to start -- Force directed is applied as a VNG config.view option
+          return LayoutGenerator.GenerateRandomLayout(graph, width, height)
         default:
           throw new Error(`Invalid layout type: ${layoutType}`)
       }
@@ -231,9 +234,4 @@ class LayoutGenerator {
 
     return layouts
   }
-
-  // static GenerateForceDirectedLayout (nodes: Nodes, edges: Edges, width: number, height: number): Layouts {
-  //   console.log(nodes, edges, width, height)
-  //   throw new Error('Force directed layout not implemented')
-  // }
 }
