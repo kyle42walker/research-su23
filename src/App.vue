@@ -79,7 +79,7 @@ const configs = vNG.defineConfigs({
   edge: {
     gap: 12,
     normal: { color: edge => edge.color },
-    marker: { target: { type: 'none' } }
+    marker: { target: { type: 'none' as 'none' | 'arrow' | 'angle' | 'circle' | 'custom' } }
   },
   path: {
     visible: true,
