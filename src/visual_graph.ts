@@ -1,4 +1,5 @@
 import { Graph, Vertex } from './graph'
+import { Robot } from './robot'
 import { Nodes, Edges, Layouts, Paths } from 'v-network-graph'
 
 export enum LayoutType { Random, Circular, LinearHorizontal, LinearVertical, TreeVerticalLeft, TreeVerticalCenter, ForceDirected }
@@ -28,11 +29,11 @@ export class VisualGraph {
       }
     }
 
-    static getPath (pathId: number, startNode: number, portsTraversed: number[], graph: Graph): Paths {
-      let sourceNode = startNode
+    static getPath (robot: Robot, graph: Graph): Paths {
+      let sourceNode = robot.startNode
       let targetNode
       let edgeId
-      const edges = portsTraversed.map((port) => {
+      const edges = robot.portsTraversed.map((port) => {
         // Ignore negative ports -- these indicate removed edges
         if (port < 0) { return '' }
 
@@ -48,7 +49,7 @@ export class VisualGraph {
         return edgeId
       })
 
-      return { [pathId.toString()]: { edges } }
+      return { [robot.id.toString()]: { edges } }
     }
 
     static extractNodes (graph: Graph): Nodes {

@@ -8,11 +8,11 @@ import {
 import { Model, GraphType, RobotType } from './model'
 import { VisualGraph, LayoutType } from './visual_graph'
 import { Robot } from './robot'
-import Listbox from 'primevue/listbox'
+// import Listbox from 'primevue/listbox'
 import Button from 'primevue/button'
 import Slider from 'primevue/slider'
-// import robotSelector from './RobotSelector.vue'
-import { ref } from 'vue'
+import RobotSelector from './components/RobotSelector.vue'
+import { reactive, ref } from 'vue'
 
 const model = new Model()
 
@@ -29,7 +29,7 @@ model.maxNumberOfGraphGenerationAttempts = 10
 model.generateGraph()
 
 // Visual graph
-const layoutType = LayoutType.ForceDirected
+const layoutType = LayoutType.Circular
 const showGraph = true
 const nodeLabelsAreVisible = true
 const portLabelsAreVisible = true
@@ -60,6 +60,7 @@ model.generateRobots()
 console.log('step count = ' + model.stepCount)
 
 // Config
+const robots = reactive(model.robotCoordinator.robots)
 
 // Iterate through all nodes and set color
 Object.keys(nodes.value).forEach(key => {
@@ -114,34 +115,31 @@ if (layoutType === LayoutType.ForceDirected) {
 if (model.isDirected) { configs.edge.marker.target.type = 'arrow' }
 
 // Initialize selected robot
-const selectedRobot = ref(null)
-const paths: vNG.Paths = {}
+const paths = ref({})
 
 // Handle new robot selection
-function onRobotSelected (event) {
-  const robot = event.value as Robot
+function onRobotSelected (robot: Robot) {
+  // Remove path if no robot is selected
+  if (robot === null) {
+    paths.value = {}
+    return
+  }
 
   // Reset node colors
   Object.keys(nodes.value).forEach(key => {
     nodes.value[key].color = '#99ccff'
   })
 
-  // Remove path if no robot is selected
-  if (robot === null) {
-    this.paths = {}
-    return
-  }
-
   // Update path for new robot position
-  this.paths = VisualGraph.getPath(robot.id, robot.startNode, robot.portsTraversed, this.model.graph)
+  paths.value = VisualGraph.getPath(robot, model.graph)
 
   // Mark current node
   nodes.value[robot.currentNode.toString()].color = '#ff0000'
 }
 
 function stepRobots () {
-  this.model.stepRobots()
-  this.vng.updateEdgeWeights(this.model.graph.nodes)
+  model.stepRobots()
+  vng.updateEdgeWeights(model.graph.nodes)
   Object.keys(edges.value).forEach(key => {
     edges.value[key].color = edges.value[key].weight > 0 ? '#000000' : '#FF0000'
   })
@@ -161,10 +159,7 @@ function stepRobots () {
   </v-network-graph>
   <Slider v-model="model.currentStep" :min="0" :max="model.stepCount" />
   <Button label="Step" @click="stepRobots()" />
-  <!-- <Listbox v-model="selectedRobot" @change="onChange($event)" :options="model.robotCoordinator.robots" optionLabel="id"/> -->
-  <Listbox v-model="selectedRobot" @change="onRobotSelected($event)" :options="model.robotCoordinator.robots"
-    optionLabel="" />
-  <!-- <robotSelector :model="model"/> -->
+  <RobotSelector @robot-selected="onRobotSelected" :robots="robots" />
 </template>
 
 <style>
