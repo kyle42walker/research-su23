@@ -8,11 +8,10 @@ import {
 import { Model, GraphType, RobotType } from './model'
 import { VisualGraph, LayoutType } from './visual_graph'
 import { Robot } from './robot'
-// import Listbox from 'primevue/listbox'
 import Button from 'primevue/button'
 import Slider from 'primevue/slider'
 import RobotSelector from './components/RobotSelector.vue'
-import { reactive, ref } from 'vue'
+import { provide, ref, shallowRef, triggerRef } from 'vue'
 
 const model = new Model()
 
@@ -29,7 +28,7 @@ model.maxNumberOfGraphGenerationAttempts = 10
 model.generateGraph()
 
 // Visual graph
-const layoutType = LayoutType.Circular
+const layoutType = LayoutType.ForceDirected
 const showGraph = true
 const nodeLabelsAreVisible = true
 const portLabelsAreVisible = true
@@ -48,7 +47,7 @@ const fdCenterStrength = 0.99
 const fdAlphaMin = 0.001
 
 // Robots
-model.robotType = RobotType.RandomWalkExploration
+model.robotType = RobotType.TreeExplorationGlobal
 model.robotCount = 10
 model.robotStartingNode = 0
 model.lambda = 5
@@ -57,10 +56,9 @@ model.generateRobots()
 
 // model.runRobots()
 // vng.updateEdgeWeights(model.graph.nodes)
-console.log('step count = ' + model.stepCount)
+// console.log('step count = ' + model.stepCount)
 
 // Config
-const robots = reactive(model.robotCoordinator.robots)
 
 // Iterate through all nodes and set color
 Object.keys(nodes.value).forEach(key => {
@@ -76,7 +74,7 @@ const configs = vNG.defineConfigs({
   node: {
     normal: { type: 'circle', radius: 20, color: node => node.color },
     hover: { color: '#88bbff' },
-    label: { visible: nodeLabelsAreVisible, fontSize: 8, text: node => node.name }
+    label: { visible: nodeLabelsAreVisible, fontSize: 8, text: node => node.name as string }
   },
   edge: {
     gap: 12,
@@ -94,14 +92,14 @@ const configs = vNG.defineConfigs({
     }
   }
 })
-if (layoutType === LayoutType.ForceDirected) {
+if (layoutType.valueOf() === LayoutType.ForceDirected) {
   configs.view = {
     layoutHandler: new ForceLayout({
       positionFixedByDrag: false,
       positionFixedByClickWithAltKey: true,
       createSimulation: (d3, nodes, edges) => {
         // d3-force parameters
-        const forceLink = d3.forceLink<ForceNodeDatum, ForceEdgeDatum>(edges).id(d => d.id)
+        const forceLink = d3.forceLink<ForceNodeDatum, ForceEdgeDatum>(edges).id((d: { id: string }) => d.id)
         return d3
           .forceSimulation(nodes)
           .force('edge', forceLink.distance(fdEdgeDistance).strength(fdEdgeStrength))
@@ -137,9 +135,16 @@ function onRobotSelected (robot: Robot) {
   nodes.value[robot.currentNode.toString()].color = '#ff0000'
 }
 
+const robots = shallowRef<Robot[]>(model.robots)
+provide('robots', robots)
+
 function stepRobots () {
   model.stepRobots()
+
+  // Update edges and robots
   vng.updateEdgeWeights(model.graph.nodes)
+  triggerRef(robots)
+
   Object.keys(edges.value).forEach(key => {
     edges.value[key].color = edges.value[key].weight > 0 ? '#000000' : '#FF0000'
   })
@@ -150,7 +155,6 @@ function stepRobots () {
   <v-network-graph v-if="showGraph" class=graph :nodes="nodes" :edges="edges" :layouts="layouts" :configs="configs"
     :paths="paths" :style="{ width: graphWidth + 'px', height: graphHeight + 'px' }">
     <template #edge-label="{ edge, ...slotProps}">
-      <!-- <v-edge-label :text="edgeId" align="center" v-bind="slotProps" /> -->
       <v-edge-label v-if="portLabelsAreVisible" :text="`${edge.sourcePort}`" align="source" vertical-align="above"
         v-bind="slotProps" />
       <v-edge-label v-if="portLabelsAreVisible" :text="`${edge.targetPort}`" align="target" vertical-align="above"
@@ -159,7 +163,7 @@ function stepRobots () {
   </v-network-graph>
   <Slider v-model="model.currentStep" :min="0" :max="model.stepCount" />
   <Button label="Step" @click="stepRobots()" />
-  <RobotSelector @robot-selected="onRobotSelected" :robots="robots" />
+  <RobotSelector @robot-selected="onRobotSelected" />
 </template>
 
 <style>
