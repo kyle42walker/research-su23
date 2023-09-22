@@ -142,4 +142,12 @@ export class Model {
       if (value < 0 || value > 1) { throw new Error('Edge survival probability must be in [0, 1]') }
       this._edgeSurvivalProbability = value
     }
+
+    get numberOfRobotsOnEachNode (): number[] {
+      const numberOfRobotsOnEachNode = new Array(this.nodeCount).fill(0)
+      this.robots.forEach((robot) => {
+        numberOfRobotsOnEachNode[robot.currentNode]++
+      })
+      return numberOfRobotsOnEachNode
+    }
 }

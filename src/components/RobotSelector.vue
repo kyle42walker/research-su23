@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { defineEmits, inject } from 'vue'
 import Listbox from 'primevue/listbox'
-import { Robot } from '../robot'
+import { Robot } from '@/robot'
 
 defineEmits<{(e: 'robotSelected', robot: Robot): void}>()
 const robots = inject<Robot[]>('robots')

@@ -13,9 +13,8 @@ import Slider from 'primevue/slider'
 import RobotSelector from './components/RobotSelector.vue'
 import { provide, ref, shallowRef, triggerRef } from 'vue'
 
-const model = new Model()
-
 // Will get model properties from GUI
+const model = new Model()
 
 // Graph
 model.graphType = GraphType.ArbitraryTree
@@ -28,7 +27,7 @@ model.maxNumberOfGraphGenerationAttempts = 10
 model.generateGraph()
 
 // Visual graph
-const layoutType = LayoutType.ForceDirected
+const layoutType = LayoutType.TreeVerticalCenter
 const showGraph = true
 const nodeLabelsAreVisible = true
 const portLabelsAreVisible = true
@@ -38,7 +37,6 @@ const vng = new VisualGraph(model.graph, graphWidth, graphHeight, layoutType)
 const nodes = ref(vng.nodes)
 const edges = ref(vng.edges)
 const layouts = ref(vng.layouts)
-
 // Force directed layout
 const fdEdgeDistance = 40
 const fdEdgeStrength = 0.6
@@ -56,9 +54,10 @@ model.generateRobots()
 
 // model.runRobots()
 // vng.updateEdgeWeights(model.graph.nodes)
-// console.log('step count = ' + model.stepCount)
 
-// Config
+// Grant access to robots in all modules
+const robots = shallowRef<Robot[]>(model.robots)
+provide('robots', robots)
 
 // Iterate through all nodes and set color
 Object.keys(nodes.value).forEach(key => {
@@ -135,11 +134,16 @@ function onRobotSelected (robot: Robot) {
   nodes.value[robot.currentNode.toString()].color = '#ff0000'
 }
 
-const robots = shallowRef<Robot[]>(model.robots)
-provide('robots', robots)
-
 function stepRobots () {
   model.stepRobots()
+
+  // Update node colors with color gradient based on number of robots
+  model.numberOfRobotsOnEachNode.forEach((robotNumber, nodeId) => {
+    const node = nodes.value[nodeId.toString()]
+    if (node === undefined) { return }
+    const color = robotNumber === 0 ? '#99ccff' : `hsl(0, 100%, ${100 - robotNumber * 10}%)`
+    node.color = color
+  })
 
   // Update edges and robots
   vng.updateEdgeWeights(model.graph.nodes)
