@@ -71,7 +71,7 @@ Object.keys(edges.value).forEach(key => {
 
 const configs = vNG.defineConfigs({
   node: {
-    normal: { type: 'circle', radius: 20, color: node => node.color },
+    normal: { type: 'circle', radius: 20, color: node => node.color, strokeColor: '#00FF00', strokeWidth: 5 },
     hover: { color: '#88bbff' },
     label: { visible: nodeLabelsAreVisible, fontSize: 8, text: node => node.name as string }
   },
@@ -115,7 +115,7 @@ if (model.isDirected) { configs.edge.marker.target.type = 'arrow' }
 const paths = ref({})
 
 // Handle new robot selection
-function onRobotSelected (robot: Robot) {
+function onRobotSelected (robot: Robot | null) {
   // Remove path if no robot is selected
   if (robot === null) {
     paths.value = {}
@@ -136,6 +136,8 @@ function onRobotSelected (robot: Robot) {
 
 function stepRobots () {
   model.stepRobots()
+
+  onRobotSelected(null)
 
   // Update node colors with color gradient based on number of robots
   model.numberOfRobotsOnEachNode.forEach((robotNumber, nodeId) => {
