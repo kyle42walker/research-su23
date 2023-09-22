@@ -113,6 +113,8 @@ if (model.isDirected) { configs.edge.marker.target.type = 'arrow' }
 
 // Initialize selected robot
 const paths = ref({})
+const selectedRobot = ref<Robot | null>(null)
+provide('selectedRobot', selectedRobot)
 
 // Handle new robot selection
 function onRobotSelected (robot: Robot | null) {
@@ -135,10 +137,11 @@ function onRobotSelected (robot: Robot | null) {
 function stepRobots () {
   model.stepRobots()
 
-  onRobotSelected(null)
-
   // Update node colors
   colorNodes(nodeColorScheme)
+
+  // Update the selected robot path
+  onRobotSelected(selectedRobot.value)
 
   // Update removed edges
   vng.updateEdgeWeights(model.graph.nodes)
@@ -185,7 +188,7 @@ function colorNodes (colorScheme: 'robotCount' | 'uniform') {
   </v-network-graph>
   <Slider v-model="model.currentStep" :min="0" :max="model.stepCount" />
   <Button label="Step" @click="stepRobots()" />
-  <RobotSelector @robot-selected="onRobotSelected" />
+  <RobotSelector @robot-selected="onRobotSelected" :selectedRobot="selectedRobot" />
 </template>
 
 <style>
