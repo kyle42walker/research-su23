@@ -27,6 +27,7 @@ model.maxNumberOfGraphGenerationAttempts = 10
 model.generateGraph()
 
 // Visual graph
+const nodeColorScheme = 'robotCount'
 const layoutType = LayoutType.TreeVerticalCenter
 const showGraph = true
 const nodeLabelsAreVisible = true
@@ -37,6 +38,7 @@ const vng = new VisualGraph(model.graph, graphWidth, graphHeight, layoutType)
 const nodes = ref(vng.nodes)
 const edges = ref(vng.edges)
 const layouts = ref(vng.layouts)
+
 // Force directed layout
 const fdEdgeDistance = 40
 const fdEdgeStrength = 0.6
@@ -60,9 +62,7 @@ const robots = shallowRef<Robot[]>(model.robots)
 provide('robots', robots)
 
 // Iterate through all nodes and set color
-Object.keys(nodes.value).forEach(key => {
-  nodes.value[key].color = '#99ccff'
-})
+colorNodes(nodeColorScheme)
 
 // Iterate through all edges and set color
 Object.keys(edges.value).forEach(key => {
@@ -116,22 +116,20 @@ const paths = ref({})
 
 // Handle new robot selection
 function onRobotSelected (robot: Robot | null) {
+  // Reset node colors
+  colorNodes(nodeColorScheme)
+
   // Remove path if no robot is selected
   if (robot === null) {
     paths.value = {}
     return
   }
 
-  // Reset node colors
-  Object.keys(nodes.value).forEach(key => {
-    nodes.value[key].color = '#99ccff'
-  })
-
   // Update path for new robot position
   paths.value = VisualGraph.getPath(robot, model.graph)
 
   // Mark current node
-  nodes.value[robot.currentNode.toString()].color = '#ff0000'
+  nodes.value[robot.currentNode.toString()].color = '#0000FF'
 }
 
 function stepRobots () {
@@ -139,21 +137,39 @@ function stepRobots () {
 
   onRobotSelected(null)
 
-  // Update node colors with color gradient based on number of robots
-  model.numberOfRobotsOnEachNode.forEach((robotNumber, nodeId) => {
-    const node = nodes.value[nodeId.toString()]
-    if (node === undefined) { return }
-    const color = robotNumber === 0 ? '#99ccff' : `hsl(0, 100%, ${100 - robotNumber * 10}%)`
-    node.color = color
-  })
+  // Update node colors
+  colorNodes(nodeColorScheme)
 
-  // Update edges and robots
+  // Update removed edges
   vng.updateEdgeWeights(model.graph.nodes)
+
+  // Update robots list to trigger reactivity
   triggerRef(robots)
 
   Object.keys(edges.value).forEach(key => {
     edges.value[key].color = edges.value[key].weight > 0 ? '#000000' : '#FF0000'
   })
+}
+
+function colorNodes (colorScheme: 'robotCount' | 'uniform') {
+  switch (colorScheme) {
+    // Color all nodes with a gradient based on the number of robots on each node
+    case 'robotCount':
+      model.numberOfRobotsOnEachNode.forEach((robotNumber, nodeId) => {
+        const node = nodes.value[nodeId.toString()]
+        if (node === undefined) { return }
+        const color = robotNumber === 0 ? '#99ccff' : `hsl(0, 100%, ${100 - robotNumber * 10}%)`
+        node.color = color
+      })
+      break
+
+    // Color all nodes the same color
+    case 'uniform':
+      Object.keys(nodes.value).forEach(key => {
+        nodes.value[key].color = '#99ccff'
+      })
+      break
+  }
 }
 </script>
 
