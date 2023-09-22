@@ -27,11 +27,12 @@ model.maxNumberOfGraphGenerationAttempts = 10
 model.generateGraph()
 
 // Visual graph
-const nodeColorScheme = 'robotCount'
+const nodeColorScheme: 'robotCount' | 'uniform' = 'robotCount'
+const indcateVisitedNodes = true
 const layoutType = LayoutType.TreeVerticalCenter
 const showGraph = true
 const nodeLabelsAreVisible = true
-const portLabelsAreVisible = true
+const portLabelsAreVisible = false
 const graphWidth = 1000
 const graphHeight = 700
 const vng = new VisualGraph(model.graph, graphWidth, graphHeight, layoutType)
@@ -62,7 +63,7 @@ const robots = shallowRef<Robot[]>(model.robots)
 provide('robots', robots)
 
 // Iterate through all nodes and set color
-colorNodes(nodeColorScheme)
+colorNodes()
 
 // Iterate through all edges and set color
 Object.keys(edges.value).forEach(key => {
@@ -71,7 +72,8 @@ Object.keys(edges.value).forEach(key => {
 
 const configs = vNG.defineConfigs({
   node: {
-    normal: { type: 'circle', radius: 20, color: node => node.color, strokeColor: '#00FF00', strokeWidth: 5 },
+    // normal: { type: 'circle', radius: 20, color: node => node.color, strokeColor: '#32CD32', strokeWidth: 3 },
+    normal: { type: 'circle', radius: 20, color: node => node.color, strokeColor: node => node.strokeColor, strokeWidth: 3 },
     hover: { color: '#88bbff' },
     label: { visible: nodeLabelsAreVisible, fontSize: 8, text: node => node.name as string }
   },
@@ -119,7 +121,7 @@ provide('selectedRobot', selectedRobot)
 // Handle new robot selection
 function onRobotSelected (robot: Robot | null) {
   // Reset node colors
-  colorNodes(nodeColorScheme)
+  colorNodes()
 
   // Remove path if no robot is selected
   if (robot === null) {
@@ -137,9 +139,6 @@ function onRobotSelected (robot: Robot | null) {
 function stepRobots () {
   model.stepRobots()
 
-  // Update node colors
-  colorNodes(nodeColorScheme)
-
   // Update the selected robot path
   onRobotSelected(selectedRobot.value)
 
@@ -154,8 +153,8 @@ function stepRobots () {
   })
 }
 
-function colorNodes (colorScheme: 'robotCount' | 'uniform') {
-  switch (colorScheme) {
+function colorNodes () {
+  switch (nodeColorScheme) {
     // Color all nodes with a gradient based on the number of robots on each node
     case 'robotCount':
       model.numberOfRobotsOnEachNode.forEach((robotNumber, nodeId) => {
@@ -172,6 +171,15 @@ function colorNodes (colorScheme: 'robotCount' | 'uniform') {
         nodes.value[key].color = '#99ccff'
       })
       break
+  }
+
+  // Color the outlines of visited nodes
+  if (indcateVisitedNodes) {
+    model.visitedNodes.forEach((visited, nodeId) => {
+      if (visited) {
+        nodes.value[nodeId.toString()].strokeColor = '#32CD32'
+      }
+    })
   }
 }
 </script>

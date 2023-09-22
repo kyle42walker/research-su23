@@ -111,6 +111,8 @@ export class Model {
 
     get robots (): robot.Robot[] { return this.robotCoordinator.robots }
 
+    get visitedNodes (): boolean[] { return this.robotCoordinator.visitedNodes }
+
     get robotCount (): number { return this._robotCount }
     set robotCount (value: number) {
       if (value < 0) { throw new Error('Robot count must be non-negative') }
