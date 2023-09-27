@@ -194,6 +194,12 @@ export class TreeExplorationWithGlobalCommunicationRobotCoordinator extends Robo
   }
 
   step () {
+    // Remove random edges every lambda steps by negating edge weights
+    if (this.stepNumber % this.lambda === 0) {
+      this.graphHistory.push({ stepNumber: this.stepNumber, graphNodes: this.graph.deepCopyNodes() })
+      this.graph.setRandomEdgeWeightSigns(this.edgeSurvivalProbability)
+    }
+
     // Indicies of plannedPorts correspond with robotIds in the robots array -- represents where the robot will move after all robots have finished planning
     const plannedPorts: number[] = []
 
@@ -245,6 +251,15 @@ export class TreeExplorationWithGlobalCommunicationRobotCoordinator extends Robo
       if (plannedPorts[robot.id] === -1) {
         return // Continue forEach loop -- skip robots that are not moving
       }
+
+      // Check if the robot can move to the planned port
+      if (this.graph.getEdgeWeightFromPort(robot.currentNode, plannedPorts[robot.id]) < 0) {
+        // Mark the intended port as negative to indicate that it is not traversable
+        robot.portsTraversed.push(-plannedPorts[robot.id] - 100) // -100 to avoid collisions with other negative ports
+        // Do nothing this step for this robot -- it will try again next step
+        return // Continue forEach loop
+      }
+
       robot.currentNode = this.graph.getAdjacentNodeFromPort(robot.currentNode, plannedPorts[robot.id])
       robot.portsTraversed.push(plannedPorts[robot.id])
 
