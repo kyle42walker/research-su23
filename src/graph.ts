@@ -2,257 +2,257 @@ type Edge = {weight: number, targetNode: number}
 export type Vertex = {weight: number, edges: Edge[]}
 
 export class Graph {
-    nodes: Vertex[] = []
-    isDirected: boolean
+  nodes: Vertex[] = []
+  isDirected: boolean
 
-    constructor (isDirected = false) {
-      this.isDirected = isDirected
-    }
+  constructor (isDirected = false) {
+    this.isDirected = isDirected
+  }
 
-    deepCopyNodes (): Vertex[] {
-      return JSON.parse(JSON.stringify(this.nodes))
-    }
+  deepCopyNodes (): Vertex[] {
+    return JSON.parse(JSON.stringify(this.nodes))
+  }
 
-    // Time complexity: O(1) amortized
-    addNode (nodeWeight = 1) {
-      this.nodes.push({ weight: nodeWeight, edges: [] })
-    }
+  // Time complexity: O(1) amortized
+  addNode (nodeWeight = 1) {
+    this.nodes.push({ weight: nodeWeight, edges: [] })
+  }
 
-    // Time complexity: O(1) amortized
-    // Assumes sourceId and targetId are valid and an edge is not already present
-    addEdge (sourceId: number, targetId: number, edgeWeight = 1) {
-      this.nodes[sourceId].edges.push({ weight: edgeWeight, targetNode: targetId })
+  // Time complexity: O(1) amortized
+  // Assumes sourceId and targetId are valid and an edge is not already present
+  addEdge (sourceId: number, targetId: number, edgeWeight = 1) {
+    this.nodes[sourceId].edges.push({ weight: edgeWeight, targetNode: targetId })
 
-      if (this.isDirected) { return }
+    if (this.isDirected) { return }
 
-      this.nodes[targetId].edges.push({ weight: edgeWeight, targetNode: sourceId })
-    }
+    this.nodes[targetId].edges.push({ weight: edgeWeight, targetNode: sourceId })
+  }
 
-    // Time complexity: O(|V| * |E|)
-    // Assumes nodeId is valid
-    removeNode (nodeId: number) {
-      // Remove the node
-      this.nodes.splice(nodeId, 1)
+  // Time complexity: O(|V| * |E|)
+  // Assumes nodeId is valid
+  removeNode (nodeId: number) {
+    // Remove the node
+    this.nodes.splice(nodeId, 1)
 
-      this.nodes.forEach((node) => {
-        node.edges.forEach((edge, i) => {
-          // Remove all edges that point to the removed node
-          if (edge.targetNode === nodeId) {
-            node.edges.splice(i, 1)
-          }
-
-          // Update all edges that point to nodes after the removed node
-          if (edge.targetNode > nodeId) {
-            edge.targetNode--
-          }
-        })
-      })
-    }
-
-    // Time complexity: O(|D|)
-    // Assumes sourceId and targetId are valid
-    removeEdge (sourceId: number, targetId: number) {
-      // Remove the edge using splice to avoid creating a new array
-      const edgeIndex = this.nodes[sourceId].edges.findIndex(edge => edge.targetNode === targetId)
-      this.nodes[sourceId].edges.splice(edgeIndex, 1)
-
-      if (this.isDirected) { return }
-
-      const reverseIndex = this.nodes[targetId].edges.findIndex(edge => edge.targetNode === sourceId)
-      this.nodes[targetId].edges.splice(reverseIndex, 1)
-    }
-
-    // Time complexity: O(1)
-    // Assumes nodeId is valid
-    setNodeWeight (nodeId: number, weight: number) {
-      this.nodes[nodeId].weight = weight
-    }
-
-    // Time complexity: O(|D|)
-    // Assumes sourceId and targetId are valid
-    setEdgeWeight (sourceId: number, targetId: number, weight: number) {
-      const edge = this.nodes[sourceId].edges.find(edge => edge.targetNode === targetId)
-      if (edge) { edge.weight = weight }
-
-      if (this.isDirected) { return }
-
-      const reverseEdge = this.nodes[targetId].edges.find(edge => edge.targetNode === sourceId)
-      if (reverseEdge) { reverseEdge.weight = weight }
-    }
-
-    setRandomEdgeWeightSigns (edgeProbability: number) {
-      this.nodes.forEach((node, sourceId) => {
-        node.edges.forEach((edge) => {
-          // Skip redundant edges if the graph is undirected
-          if (edge.targetNode < sourceId && !this.isDirected) { return }
-
-          if (Math.random() < edgeProbability) {
-            edge.weight = -Math.abs(edge.weight)
-          } else {
-            edge.weight = Math.abs(edge.weight)
-          }
-        })
-      })
-    }
-
-    getNodeIds (): number[] {
-      return this.nodes.map((_, i) => i)
-    }
-
-    // Time complexity: O(|1|)
-    getNodeWeight (nodeId: number): number {
-      return this.nodes[nodeId].weight
-    }
-
-    // Time complexity: O(|D|)
-    getEdgeWeight (sourceId: number, targetId: number): number {
-      const edge = this.nodes[sourceId].edges.find(edge => edge.targetNode === targetId)
-      if (edge) { return edge.weight }
-
-      return 0
-    }
-
-    getEdgeWeightFromPort (nodeId: number, port: number): number {
-      return this.nodes[nodeId].edges[port].weight
-    }
-
-    // Time complexity: O(1)
-    getNodeCount (): number {
-      return this.nodes.length
-    }
-
-    // Time complexity: O(1)
-    getEdgeCount (): number {
-      const count = this.nodes.reduce((acc, node) => acc + node.edges.length, 0)
-      return this.isDirected ? count : count / 2
-    }
-
-    // Time complexity: O(|D|)
-    getAdjacentNodes (nodeId: number): number[] {
-      return this.nodes[nodeId].edges.map(edge => edge.targetNode)
-    }
-
-    // Time complexity: O(|D|)
-    getChildNodes (nodeId: number, parentId: number): number[] {
-      return this.getAdjacentNodes(nodeId).filter(node => node !== parentId)
-    }
-
-    // Time complexity: O(|D|)
-    getChildPorts (nodeId: number, parentPort: number): number[] {
-      return [...Array(this.getNumberOfPorts(nodeId)).keys()].filter(port => port !== parentPort)
-    }
-
-    // Time complexity: O(1)
-    // Ports are the indices of the edges in the node's edge array
-    getNumberOfPorts (nodeId: number): number {
-      return this.nodes[nodeId].edges.length
-    }
-
-    // Time complexity: O(1)
-    getAdjacentNodeFromPort (nodeId: number, port: number): number {
-      return this.nodes[nodeId].edges[port].targetNode
-    }
-
-    // Time complexity: O(|D|)
-    // Returns -1 if not found
-    getPortFromAdjacentNode (nodeId: number, adjacentNodeId: number): number {
-      return this.nodes[nodeId].edges.findIndex(edge => edge.targetNode === adjacentNodeId)
-    }
-
-    // Time complexity: O(|V| + |E|)
-    // Returns the shortest path from sourceId to targetId in nodes traversed
-    // Returns null if no path exists
-    // Uses BFS
-    getShortestPath (sourceId: number, targetId: number): number[] | null {
-      const visited: boolean[] = new Array(this.getNodeCount()).fill(false)
-      const queue: number[] = []
-      const path: number[] = []
-
-      queue.push(sourceId)
-
-      while (queue.length > 0) {
-        const currentNode = queue.shift() as number
-        visited[currentNode] = true
-
-        if (currentNode === targetId) {
-          path.push(currentNode)
-          break
+    this.nodes.forEach((node) => {
+      node.edges.forEach((edge, i) => {
+        // Remove all edges that point to the removed node
+        if (edge.targetNode === nodeId) {
+          node.edges.splice(i, 1)
         }
 
+        // Update all edges that point to nodes after the removed node
+        if (edge.targetNode > nodeId) {
+          edge.targetNode--
+        }
+      })
+    })
+  }
+
+  // Time complexity: O(|D|)
+  // Assumes sourceId and targetId are valid
+  removeEdge (sourceId: number, targetId: number) {
+    // Remove the edge using splice to avoid creating a new array
+    const edgeIndex = this.nodes[sourceId].edges.findIndex(edge => edge.targetNode === targetId)
+    this.nodes[sourceId].edges.splice(edgeIndex, 1)
+
+    if (this.isDirected) { return }
+
+    const reverseIndex = this.nodes[targetId].edges.findIndex(edge => edge.targetNode === sourceId)
+    this.nodes[targetId].edges.splice(reverseIndex, 1)
+  }
+
+  // Time complexity: O(1)
+  // Assumes nodeId is valid
+  setNodeWeight (nodeId: number, weight: number) {
+    this.nodes[nodeId].weight = weight
+  }
+
+  // Time complexity: O(|D|)
+  // Assumes sourceId and targetId are valid
+  setEdgeWeight (sourceId: number, targetId: number, weight: number) {
+    const edge = this.nodes[sourceId].edges.find(edge => edge.targetNode === targetId)
+    if (edge) { edge.weight = weight }
+
+    if (this.isDirected) { return }
+
+    const reverseEdge = this.nodes[targetId].edges.find(edge => edge.targetNode === sourceId)
+    if (reverseEdge) { reverseEdge.weight = weight }
+  }
+
+  setRandomEdgeWeightSigns (edgeProbability: number) {
+    this.nodes.forEach((node, sourceId) => {
+      node.edges.forEach((edge) => {
+        // Skip redundant edges if the graph is undirected
+        if (edge.targetNode < sourceId && !this.isDirected) { return }
+
+        if (Math.random() < edgeProbability) {
+          edge.weight = -Math.abs(edge.weight)
+        } else {
+          edge.weight = Math.abs(edge.weight)
+        }
+      })
+    })
+  }
+
+  getNodeIds (): number[] {
+    return this.nodes.map((_, i) => i)
+  }
+
+  // Time complexity: O(|1|)
+  getNodeWeight (nodeId: number): number {
+    return this.nodes[nodeId].weight
+  }
+
+  // Time complexity: O(|D|)
+  getEdgeWeight (sourceId: number, targetId: number): number {
+    const edge = this.nodes[sourceId].edges.find(edge => edge.targetNode === targetId)
+    if (edge) { return edge.weight }
+
+    return 0
+  }
+
+  getEdgeWeightFromPort (nodeId: number, port: number): number {
+    return this.nodes[nodeId].edges[port].weight
+  }
+
+  // Time complexity: O(1)
+  getNodeCount (): number {
+    return this.nodes.length
+  }
+
+  // Time complexity: O(1)
+  getEdgeCount (): number {
+    const count = this.nodes.reduce((acc, node) => acc + node.edges.length, 0)
+    return this.isDirected ? count : count / 2
+  }
+
+  // Time complexity: O(|D|)
+  getAdjacentNodes (nodeId: number): number[] {
+    return this.nodes[nodeId].edges.map(edge => edge.targetNode)
+  }
+
+  // Time complexity: O(|D|)
+  getChildNodes (nodeId: number, parentId: number): number[] {
+    return this.getAdjacentNodes(nodeId).filter(node => node !== parentId)
+  }
+
+  // Time complexity: O(|D|)
+  getChildPorts (nodeId: number, parentPort: number): number[] {
+    return [...Array(this.getNumberOfPorts(nodeId)).keys()].filter(port => port !== parentPort)
+  }
+
+  // Time complexity: O(1)
+  // Ports are the indices of the edges in the node's edge array
+  getNumberOfPorts (nodeId: number): number {
+    return this.nodes[nodeId].edges.length
+  }
+
+  // Time complexity: O(1)
+  getAdjacentNodeFromPort (nodeId: number, port: number): number {
+    return this.nodes[nodeId].edges[port].targetNode
+  }
+
+  // Time complexity: O(|D|)
+  // Returns -1 if not found
+  getPortFromAdjacentNode (nodeId: number, adjacentNodeId: number): number {
+    return this.nodes[nodeId].edges.findIndex(edge => edge.targetNode === adjacentNodeId)
+  }
+
+  // Time complexity: O(|V| + |E|)
+  // Returns the shortest path from sourceId to targetId in nodes traversed
+  // Returns null if no path exists
+  // Uses BFS
+  getShortestPath (sourceId: number, targetId: number): number[] | null {
+    const visited: boolean[] = new Array(this.getNodeCount()).fill(false)
+    const queue: number[] = []
+    const path: number[] = []
+
+    queue.push(sourceId)
+
+    while (queue.length > 0) {
+      const currentNode = queue.shift() as number
+      visited[currentNode] = true
+
+      if (currentNode === targetId) {
         path.push(currentNode)
-
-        this.getAdjacentNodes(currentNode).forEach((adjacentNode) => {
-          if (!visited[adjacentNode]) {
-            queue.push(adjacentNode)
-          }
-        })
+        break
       }
 
-      if (path[path.length - 1] !== targetId) {
-        return null
-      }
+      path.push(currentNode)
 
-      return path
+      this.getAdjacentNodes(currentNode).forEach((adjacentNode) => {
+        if (!visited[adjacentNode]) {
+          queue.push(adjacentNode)
+        }
+      })
     }
 
-    // Time complexity: O(|V| + |E|)
-    getDistanceBetweenNodes (sourceId: number, targetId: number): number {
-      const shortestPath = this.getShortestPath(sourceId, targetId)
-      if (shortestPath === null) {
-        return Infinity
-      }
-
-      return shortestPath.length - 1
+    if (path[path.length - 1] !== targetId) {
+      return null
     }
 
-    getDepth (rootId: number): number {
-      const visited: boolean[] = new Array(this.getNodeCount()).fill(false)
-      const queue: number[] = []
-      const depth: number[] = []
+    return path
+  }
 
-      queue.push(rootId)
-      depth[rootId] = 0
-
-      while (queue.length > 0) {
-        const currentNode = queue.shift() as number
-        visited[currentNode] = true
-
-        this.getAdjacentNodes(currentNode).forEach((adjacentNode) => {
-          if (!visited[adjacentNode]) {
-            queue.push(adjacentNode)
-            depth[adjacentNode] = depth[currentNode] + 1
-          }
-        })
-      }
-
-      return Math.max(...depth)
+  // Time complexity: O(|V| + |E|)
+  getDistanceBetweenNodes (sourceId: number, targetId: number): number {
+    const shortestPath = this.getShortestPath(sourceId, targetId)
+    if (shortestPath === null) {
+      return Infinity
     }
 
-    // Time complexity: O(|V| + |E|)
-    isConnected (): boolean {
-      const visited: boolean[] = new Array(this.getNodeCount()).fill(false)
-      const queue: number[] = []
+    return shortestPath.length - 1
+  }
 
-      queue.push(0)
+  getDepth (rootId: number): number {
+    const visited: boolean[] = new Array(this.getNodeCount()).fill(false)
+    const queue: number[] = []
+    const depth: number[] = []
 
-      while (queue.length > 0) {
-        const currentNode = queue.shift() as number
-        visited[currentNode] = true
+    queue.push(rootId)
+    depth[rootId] = 0
 
-        this.getAdjacentNodes(currentNode).forEach((adjacentNode) => {
-          if (!visited[adjacentNode]) {
-            queue.push(adjacentNode)
-          }
-        })
-      }
+    while (queue.length > 0) {
+      const currentNode = queue.shift() as number
+      visited[currentNode] = true
 
-      return visited.every(node => node)
+      this.getAdjacentNodes(currentNode).forEach((adjacentNode) => {
+        if (!visited[adjacentNode]) {
+          queue.push(adjacentNode)
+          depth[adjacentNode] = depth[currentNode] + 1
+        }
+      })
     }
 
-    // Time complexity: O(|D|)
-    areAdjacent (sourceId: number, targetId: number): boolean {
-      return this.nodes[sourceId].edges.some(edge => edge.targetNode === targetId)
+    return Math.max(...depth)
+  }
+
+  // Time complexity: O(|V| + |E|)
+  isConnected (): boolean {
+    const visited: boolean[] = new Array(this.getNodeCount()).fill(false)
+    const queue: number[] = []
+
+    queue.push(0)
+
+    while (queue.length > 0) {
+      const currentNode = queue.shift() as number
+      visited[currentNode] = true
+
+      this.getAdjacentNodes(currentNode).forEach((adjacentNode) => {
+        if (!visited[adjacentNode]) {
+          queue.push(adjacentNode)
+        }
+      })
     }
+
+    return visited.every(node => node)
+  }
+
+  // Time complexity: O(|D|)
+  areAdjacent (sourceId: number, targetId: number): boolean {
+    return this.nodes[sourceId].edges.some(edge => edge.targetNode === targetId)
+  }
 }
 
 export class GraphGenerator {

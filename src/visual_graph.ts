@@ -5,110 +5,110 @@ import { Nodes, Edges, Layouts, Paths } from 'v-network-graph'
 export enum LayoutType { Random, Circular, LinearHorizontal, LinearVertical, TreeVerticalLeft, TreeVerticalCenter, ForceDirected }
 
 export class VisualGraph {
-    nodes: Nodes
-    edges: Edges
-    layouts: Layouts
+  nodes: Nodes
+  edges: Edges
+  layouts: Layouts
 
-    constructor (graph: Graph, width: number, height: number, layoutType: LayoutType) {
-      this.nodes = VisualGraph.extractNodes(graph)
-      this.edges = VisualGraph.extractEdges(graph)
-      this.layouts = VisualGraph.generateLayouts(graph, width, height, layoutType)
+  constructor (graph: Graph, width: number, height: number, layoutType: LayoutType) {
+    this.nodes = VisualGraph.extractNodes(graph)
+    this.edges = VisualGraph.extractEdges(graph)
+    this.layouts = VisualGraph.generateLayouts(graph, width, height, layoutType)
+  }
+
+  updateEdgeWeights (graphNodes: Vertex[]) {
+    Object.values(this.edges).forEach((edge) => {
+      edge.weight = graphNodes[parseInt(edge.source)].edges[parseInt(edge.sourcePort)].weight
+    })
+  }
+
+  getData () {
+    return {
+      nodes: this.nodes,
+      edges: this.edges,
+      layouts: this.layouts
     }
+  }
 
-    updateEdgeWeights (graphNodes: Vertex[]) {
-      Object.values(this.edges).forEach((edge) => {
-        edge.weight = graphNodes[parseInt(edge.source)].edges[parseInt(edge.sourcePort)].weight
-      })
-    }
+  static getPath (robot: Robot, graph: Graph): Paths {
+    let sourceNode = robot.startNode
+    let targetNode
+    let edgeId
+    const edges = robot.portsTraversed.map((port) => {
+      // Ignore negative ports -- these indicate removed edges
+      if (port < 0) { return '' }
 
-    getData () {
-      return {
-        nodes: this.nodes,
-        edges: this.edges,
-        layouts: this.layouts
+      targetNode = graph.getAdjacentNodeFromPort(sourceNode, port)
+
+      // Undirected graph edges are stored in the format "{smallerNodeId}-{largerNodeId}"
+      if (targetNode < sourceNode && !graph.isDirected) {
+        edgeId = `${targetNode}-${sourceNode}`
+      } else {
+        edgeId = `${sourceNode}-${targetNode}`
       }
-    }
+      sourceNode = targetNode
+      return edgeId
+    })
 
-    static getPath (robot: Robot, graph: Graph): Paths {
-      let sourceNode = robot.startNode
-      let targetNode
-      let edgeId
-      const edges = robot.portsTraversed.map((port) => {
-        // Ignore negative ports -- these indicate removed edges
-        if (port < 0) { return '' }
+    return { [robot.id.toString()]: { edges } }
+  }
 
-        targetNode = graph.getAdjacentNodeFromPort(sourceNode, port)
+  static extractNodes (graph: Graph): Nodes {
+    const nodes: Nodes = {}
 
-        // Undirected graph edges are stored in the format "{smallerNodeId}-{largerNodeId}"
-        if (targetNode < sourceNode && !graph.isDirected) {
-          edgeId = `${targetNode}-${sourceNode}`
-        } else {
-          edgeId = `${sourceNode}-${targetNode}`
-        }
-        sourceNode = targetNode
-        return edgeId
-      })
-
-      return { [robot.id.toString()]: { edges } }
-    }
-
-    static extractNodes (graph: Graph): Nodes {
-      const nodes: Nodes = {}
-
-      graph.nodes.forEach((node, id) => {
-        nodes[id.toString()] = {
-          name: id.toString(),
-          weight: node.weight
-        }
-      })
-
-      return nodes
-    }
-
-    static extractEdges (graph: Graph): Edges {
-      const edges: Edges = {}
-
-      graph.nodes.forEach((node, sourceId) => {
-        node.edges.forEach((edge, port) => {
-          // Skip redundant edges if the graph is undirected
-          if (edge.targetNode < sourceId && !graph.isDirected) { return }
-
-          const targetId = edge.targetNode
-          const edgeId = `${sourceId}-${targetId}`
-          edges[edgeId] = {
-            weight: edge.weight,
-            source: sourceId.toString(),
-            target: targetId.toString(),
-            sourcePort: port,
-            targetPort: graph.getPortFromAdjacentNode(targetId, sourceId) // -1 if not found
-          }
-        })
-      })
-
-      return edges
-    }
-
-    static generateLayouts (graph: Graph, width: number, height: number, layoutType: LayoutType): Layouts {
-      switch (layoutType) {
-        case LayoutType.Random:
-          return LayoutGenerator.GenerateRandomLayout(graph, width, height)
-        case LayoutType.Circular:
-          return LayoutGenerator.GenerateCircularLayout(graph, width, height)
-        case LayoutType.LinearHorizontal:
-          return LayoutGenerator.GenerateLinearHorizontalLayout(graph, width)
-        case LayoutType.LinearVertical:
-          return LayoutGenerator.GenerateLinearVerticalLayout(graph, height)
-        case LayoutType.TreeVerticalLeft:
-          return LayoutGenerator.GenerateTreeVerticalLayout(graph, width, height, false)
-        case LayoutType.TreeVerticalCenter:
-          return LayoutGenerator.GenerateTreeVerticalLayout(graph, width, height, true)
-        case LayoutType.ForceDirected:
-          // Random graph to start -- Force directed is applied as a VNG config.view option
-          return LayoutGenerator.GenerateRandomLayout(graph, width, height)
-        default:
-          throw new Error(`Invalid layout type: ${layoutType}`)
+    graph.nodes.forEach((node, id) => {
+      nodes[id.toString()] = {
+        name: id.toString(),
+        weight: node.weight
       }
+    })
+
+    return nodes
+  }
+
+  static extractEdges (graph: Graph): Edges {
+    const edges: Edges = {}
+
+    graph.nodes.forEach((node, sourceId) => {
+      node.edges.forEach((edge, port) => {
+        // Skip redundant edges if the graph is undirected
+        if (edge.targetNode < sourceId && !graph.isDirected) { return }
+
+        const targetId = edge.targetNode
+        const edgeId = `${sourceId}-${targetId}`
+        edges[edgeId] = {
+          weight: edge.weight,
+          source: sourceId.toString(),
+          target: targetId.toString(),
+          sourcePort: port,
+          targetPort: graph.getPortFromAdjacentNode(targetId, sourceId) // -1 if not found
+        }
+      })
+    })
+
+    return edges
+  }
+
+  static generateLayouts (graph: Graph, width: number, height: number, layoutType: LayoutType): Layouts {
+    switch (layoutType) {
+      case LayoutType.Random:
+        return LayoutGenerator.GenerateRandomLayout(graph, width, height)
+      case LayoutType.Circular:
+        return LayoutGenerator.GenerateCircularLayout(graph, width, height)
+      case LayoutType.LinearHorizontal:
+        return LayoutGenerator.GenerateLinearHorizontalLayout(graph, width)
+      case LayoutType.LinearVertical:
+        return LayoutGenerator.GenerateLinearVerticalLayout(graph, height)
+      case LayoutType.TreeVerticalLeft:
+        return LayoutGenerator.GenerateTreeVerticalLayout(graph, width, height, false)
+      case LayoutType.TreeVerticalCenter:
+        return LayoutGenerator.GenerateTreeVerticalLayout(graph, width, height, true)
+      case LayoutType.ForceDirected:
+        // Random graph to start -- Force directed is applied as a VNG config.view option
+        return LayoutGenerator.GenerateRandomLayout(graph, width, height)
+      default:
+        throw new Error(`Invalid layout type: ${layoutType}`)
     }
+  }
 }
 
 class LayoutGenerator {
@@ -158,7 +158,7 @@ class LayoutGenerator {
     let x = 0
     graph.getNodeIds().forEach((nodeId) => {
       layouts.nodes[nodeId] = {
-        x: x,
+        x,
         y: 0
       }
       x += xStep
@@ -178,7 +178,7 @@ class LayoutGenerator {
     graph.getNodeIds().forEach((nodeId) => {
       layouts.nodes[nodeId] = {
         x: 0,
-        y: y
+        y
       }
       y += yStep
     })
@@ -223,8 +223,8 @@ class LayoutGenerator {
 
         // Calculate the x and y coordinates for each node
         layouts.nodes[nodeId] = {
-          x: x,
-          y: y
+          x,
+          y
         }
         x += xStep
       })

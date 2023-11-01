@@ -54,6 +54,7 @@ model.robotStartingNode = 0
 model.lambda = 5
 model.edgeSurvivalProbability = 0.5
 model.generateRobots()
+console.log('ROBOTS: ' + model.robots)
 
 // model.runRobots()
 // vng.updateEdgeWeights(model.graph.nodes)
@@ -66,9 +67,7 @@ provide('robots', robots)
 colorNodes()
 
 // Iterate through all edges and set color
-Object.keys(edges.value).forEach(key => {
-  edges.value[key].color = '#000000'
-})
+colorEdges()
 
 const configs = vNG.defineConfigs({
   node: {
@@ -143,7 +142,7 @@ function stepRobots () {
   onRobotSelected(selectedRobot.value)
 
   // Update removed edges
-  vng.updateEdgeWeights(model.graph.nodes)
+  colorEdges()
 
   // Update robots list to trigger reactivity
   triggerRef(robots)
@@ -181,6 +180,13 @@ function colorNodes () {
       }
     })
   }
+}
+
+function colorEdges () {
+  vng.updateEdgeWeights(model.graph.nodes)
+  Object.keys(edges.value).forEach(key => {
+    edges.value[key].color = edges.value[key].weight > 0 ? '#000000' : '#FF0000'
+  })
 }
 </script>
 
