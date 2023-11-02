@@ -62,16 +62,13 @@ export class Model {
   generateRobots () {
     switch (this.robotType) {
       case RobotType.RandomWalkDispersion:
-        this.robotCoordinator = new robot.RandomWalkDispersionRobotCoordinator(this.graph, this.lambda, this.edgeSurvivalProbability)
-        this.robotCoordinator.createRobots(this.robotCount, this.robotStartingNode)
+        this.robotCoordinator = new robot.RandomWalkDispersionRobotCoordinator(this.graph, this.lambda, this.edgeSurvivalProbability, this.robotCount, this.robotStartingNode)
         break
       case RobotType.RandomWalkExploration:
-        this.robotCoordinator = new robot.RandomWalkExplorationRobotCoordinator(this.graph, this.lambda, this.edgeSurvivalProbability)
-        this.robotCoordinator.createRobots(this.robotCount, this.robotStartingNode)
+        this.robotCoordinator = new robot.RandomWalkExplorationRobotCoordinator(this.graph, this.lambda, this.edgeSurvivalProbability, this.robotCount, this.robotStartingNode)
         break
       case RobotType.TreeExplorationGlobal:
-        this.robotCoordinator = new robot.TreeExplorationWithGlobalCommunicationRobotCoordinator(this.graph, this.lambda, this.edgeSurvivalProbability)
-        this.robotCoordinator.createRobots(this.robotCount, this.robotStartingNode)
+        this.robotCoordinator = new robot.TreeExplorationWithGlobalCommunicationRobotCoordinator(this.graph, this.lambda, this.edgeSurvivalProbability, this.robotCount, this.robotStartingNode)
         break
       default:
         throw new Error(`Invalid robot type: ${this.robotType}`)

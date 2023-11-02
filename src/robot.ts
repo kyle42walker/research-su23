@@ -17,17 +17,22 @@ export abstract class RobotCoordinator {
   graphHistory: { stepNumber: number, graphNodes: Vertex[] }[] = []
   visitedNodes: boolean[]
   robots: Robot[] = []
+  robotStartingNode: number
+  numberOfRobotsToGenerate: number
   robotIdCount = 0
   stepNumber = 0
   lambda: number
   edgeSurvivalProbability: number
 
-  constructor (graph: Graph, lambda: number, edgeSurvivalProbability: number) {
+  constructor (graph: Graph, lambda: number, edgeSurvivalProbability: number, numberOfRobotsToGenerate: number, robotStartingNode = 0) {
     this.graph = graph
     this.lambda = lambda
     this.edgeSurvivalProbability = edgeSurvivalProbability
+    this.numberOfRobotsToGenerate = numberOfRobotsToGenerate
+    this.robotStartingNode = robotStartingNode
 
     this.visitedNodes = new Array(graph.getNodeCount()).fill(false)
+    this.createRobots(numberOfRobotsToGenerate, robotStartingNode)
   }
 
   // Create robots and place them at the starting node
@@ -172,21 +177,11 @@ export class TreeExplorationWithGlobalCommunicationRobotCoordinator extends Robo
   parentPorts: number[] = []
   childPorts: number[][] = []
 
-  // Number of robots to create each step
-  numberOfRobots = 0
-
-  constructor (graph: Graph, lambda: number, edgeSurvivalProbability: number) {
-    super(graph, lambda, edgeSurvivalProbability)
+  constructor (graph: Graph, lambda: number, edgeSurvivalProbability: number, numberOfRobotsToGenerate: number, robotStartingNode = 0) {
+    super(graph, lambda, edgeSurvivalProbability, numberOfRobotsToGenerate, robotStartingNode)
 
     // Represent the graph as a tree
     this.treeify()
-  }
-
-  createRobots (numberOfRobots: number, startingNode: number): void {
-    super.createRobots(numberOfRobots, startingNode)
-
-    // Store the number of robots to create every step
-    this.numberOfRobots = numberOfRobots
   }
 
   initializeRobot () {
@@ -270,7 +265,7 @@ export class TreeExplorationWithGlobalCommunicationRobotCoordinator extends Robo
     })
 
     // Generate new robots
-    this.createRobots(this.numberOfRobots, 0)
+    this.createRobots(this.numberOfRobotsToGenerate, 0)
 
     ++this.stepNumber
   }
