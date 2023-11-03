@@ -80,13 +80,13 @@ export class Graph {
     if (reverseEdge) { reverseEdge.weight = weight }
   }
 
-  setRandomEdgeWeightSigns (edgeProbability: number) {
+  setRandomEdgeWeightSigns (edgeSurvivalProbability: number) {
     this.nodes.forEach((node, sourceId) => {
       node.edges.forEach((edge) => {
         // Skip redundant edges if the graph is undirected
         if (edge.targetNode < sourceId && !this.isDirected) { return }
 
-        if (Math.random() < edgeProbability) {
+        if (Math.random() > edgeSurvivalProbability) {
           edge.weight = -Math.abs(edge.weight)
         } else {
           edge.weight = Math.abs(edge.weight)
