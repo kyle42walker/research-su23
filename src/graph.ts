@@ -138,6 +138,7 @@ export class Graph {
   }
 
   // Time complexity: O(|D|)
+  // Return list of all ports except the one that leads to the parent node
   getChildPorts (nodeId: number, parentPort: number): number[] {
     return [...Array(this.getNumberOfPorts(nodeId)).keys()].filter(port => port !== parentPort)
   }

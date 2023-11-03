@@ -9,7 +9,7 @@ export type Robot = {
 }
 
 type RandomWalkRobot = Robot & { state: 'active' | 'discarded' }
-type LocalCommunicationRobot = Robot & { state: 'exploring' | 'notifying' | 'waiting to notify' | 'discarded' }
+// type LocalCommunicationRobot = Robot & { state: 'exploring' | 'notifying' | 'waiting to notify' | 'discarded' }
 
 // Manages the robots and their movement
 export abstract class RobotCoordinator {
@@ -32,6 +32,7 @@ export abstract class RobotCoordinator {
     this.robotStartingNode = robotStartingNode
 
     this.visitedNodes = new Array(graph.getNodeCount()).fill(false)
+    this.visitedNodes[this.robotStartingNode] = true
     this.createRobots(numberOfRobotsToGenerate, robotStartingNode)
   }
 
@@ -171,7 +172,7 @@ export class RandomWalkExplorationRobotCoordinator extends RobotCoordinator {
   }
 }
 
-// A robot coordinator that implements fast collaborative exploration with global communication
+// A robot coordinator that implements fast collaborative exploration of a tree with global communication
 export class TreeExplorationWithGlobalCommunicationRobotCoordinator extends RobotCoordinator {
   // Indicies of parentPorts and childPorts correspond with nodeIds in the graph
   parentPorts: number[] = []
@@ -180,7 +181,7 @@ export class TreeExplorationWithGlobalCommunicationRobotCoordinator extends Robo
   constructor (graph: Graph, lambda: number, edgeSurvivalProbability: number, numberOfRobotsToGenerate: number, robotStartingNode = 0) {
     super(graph, lambda, edgeSurvivalProbability, numberOfRobotsToGenerate, robotStartingNode)
 
-    // Represent the graph as a tree
+    // Populate parentPorts and childPorts arrays
     this.treeify()
   }
 
@@ -209,6 +210,7 @@ export class TreeExplorationWithGlobalCommunicationRobotCoordinator extends Robo
       // Determine number of robots to move to each child port
       const robotsOnNode = this.robots.filter((robot) => robot.currentNode === visitedNode)
       const robotsToEachChildPort = boundaryCount.map((count) => Math.floor(count / boundaryCountSum * robotsOnNode.length))
+      const robotsToEachChildPortSum = robotsToEachChildPort.reduce((a, b) => a + b, 0)
 
       // For leaf nodes and nodes on completely explored branches, set plannedPort to -1
       if (boundaryCountSum === 0) {
@@ -220,10 +222,10 @@ export class TreeExplorationWithGlobalCommunicationRobotCoordinator extends Robo
       }
 
       // Add remaining robots to port with highest boundary number -- ties go to lowest index port
-      if (robotsToEachChildPort.reduce((a, b) => a + b, 0) !== robotsOnNode.length) {
+      if (robotsToEachChildPortSum !== robotsOnNode.length) {
         const maxBoundaryNumber = boundaryCount.reduce((a, b) => Math.max(a, b), 0)
         const maxBoundaryNumberIndex = boundaryCount.indexOf(maxBoundaryNumber)
-        robotsToEachChildPort[maxBoundaryNumberIndex] += robotsOnNode.length - robotsToEachChildPort.reduce((a, b) => a + b, 0)
+        robotsToEachChildPort[maxBoundaryNumberIndex] += robotsOnNode.length - robotsToEachChildPortSum
       }
 
       // Robots on this node are distributed to child ports proportionally to the boundary numbers
@@ -279,9 +281,6 @@ export class TreeExplorationWithGlobalCommunicationRobotCoordinator extends Robo
 
   // Represent the already tree-structured graph as a tree
   treeify () {
-    // Assumes node index 0 is root
-    this.visitedNodes[0] = true
-
     // Initialize parent nodes to -1
     this.parentPorts = new Array(this.graph.getNodeCount()).fill(-1)
 
@@ -315,57 +314,119 @@ export class TreeExplorationWithGlobalCommunicationRobotCoordinator extends Robo
   }
 }
 
-// A robot coordinator that implements fast collaborative exploration with local communication
-export class TreeExplorationWithLocalCommunicationRobotCoordinator extends RobotCoordinator {
-  robots: LocalCommunicationRobot[] = []
+// A robot coordinator that implements fast collaborative exploration of an arbitrary graph with global communication
+export class ArbitraryGraphExplorationWithGlobalCommunicationRobotCoordinator extends RobotCoordinator {
+  // Indicies of parentPorts and childPorts correspond with nodeIds in the graph
+  parentPorts: number[] = []
+  childPorts: number[][] = []
 
-  // Number of robots to create each step
-  numberOfRobots = 0
+  constructor (graph: Graph, lambda: number, edgeSurvivalProbability: number, numberOfRobotsToGenerate: number, robotStartingNode = 0) {
+    super(graph, lambda, edgeSurvivalProbability, numberOfRobotsToGenerate, robotStartingNode)
 
-  createRobots (numberOfRobots: number, startingNode: number): void {
-    super.createRobots(numberOfRobots, startingNode)
-
-    // numberOfRobots is updated here to maintain consistent function calls with other robot coordinators
-    this.numberOfRobots = numberOfRobots
+    // Initialize parent nodes to -1
+    this.parentPorts = new Array(this.graph.getNodeCount()).fill(-1)
   }
 
-  initializeRobot (robot: LocalCommunicationRobot): void {
-    robot.state = 'exploring'
+  initializeRobot () {
+    // Do nothing -- no special configuration required
   }
 
+  // TODO -- if the node has been visited already, then remove it from the childPorts array of the less optimal path
   step () {
-    // Get indices of visited nodes
-    const visitedNodeIds = this.visitedNodes.map((visited, index) => visited ? index : -1).filter((index) => index !== -1)
+    // Indicies of plannedPorts correspond with robotIds in the robots array -- represents where the robot will move after all robots have finished planning
+    const plannedPorts: number[] = []
 
-    visitedNodeIds.forEach((visitedNode) => {
-      // Get robots on this node
-      const robotsOnNode = this.robots.filter((robot) => robot.currentNode === visitedNode)
-      // const exploringRobots = robotsOnNode.filter((robot) => robot.state === 'exploring')
-      const notifyingRobots = robotsOnNode.filter((robot) => robot.state === 'notifying')
-      const waitingRobots = robotsOnNode.filter((robot) => robot.state === 'waiting to notify')
+    // Get all unique nodes with robots on them
+    const nodesWithRobots: number[] = this.robots.map((robot) => robot.currentNode).filter((nodeId, index, array) => array.indexOf(nodeId) === index)
 
-      // Check if it is a leaf node
-      if (this.graph.getNumberOfPorts(visitedNode) === 1) { // Only the parent port
-        // TODO: Handle leaf nodes
+    // For each node with robots, find children and add them to the tree
+    nodesWithRobots.forEach((nodeWithRobot) => {
+      // Compute the child ports of this node, if they have not already been computed
+      if (!this.childPorts[nodeWithRobot]) {
+        this.childPorts[nodeWithRobot] = this.graph.getChildPorts(nodeWithRobot, this.parentPorts[nodeWithRobot])
+      }
+
+      // Get number of boundary nodes along each child port of this node
+      const boundaryCount = this.childPorts[nodeWithRobot].map((childPort) => this.computeBoundaryNodesOnPort(nodeWithRobot, childPort))
+      const boundaryCountSum = boundaryCount.reduce((a, b) => a + b, 0)
+
+      // Determine number of robots to move to each child port
+      const robotsOnNode = this.robots.filter((robot) => robot.currentNode === nodeWithRobot)
+      const robotsToEachChildPort = boundaryCount.map((count) => Math.floor(count / boundaryCountSum * robotsOnNode.length))
+      const robotsToEachChildPortSum = robotsToEachChildPort.reduce((a, b) => a + b, 0)
+
+      // For leaf nodes and nodes on completely explored branches, set plannedPort to -1
+      if (boundaryCountSum === 0) {
+        robotsOnNode.forEach((robot) => {
+          plannedPorts[robot.id] = -1
+        })
         return // Continue forEach loop
       }
 
-      // For all nodes except the root, move notifying robots to the parent node
-      if (visitedNode !== 0) { // Assumes root is always node id 0
-        notifyingRobots.forEach((robot) => {
-          // Assumes parent is always at port 0
-          robot.currentNode = this.graph.getAdjacentNodeFromPort(robot.currentNode, 0)
-          robot.portsTraversed.push(0)
+      // Add remaining robots to port with highest boundary number -- ties go to lowest index port
+      // Compare the number of robots split evenly to each port with the number of robots on this node to see if there are any leftover
+      if (robotsToEachChildPortSum !== robotsOnNode.length) {
+        const maxBoundaryNumber = boundaryCount.reduce((a, b) => Math.max(a, b), 0)
+        const maxBoundaryNumberIndex = boundaryCount.indexOf(maxBoundaryNumber) // returns first occurence of maxBoundaryNumber
+        robotsToEachChildPort[maxBoundaryNumberIndex] += robotsOnNode.length - robotsToEachChildPortSum
+      }
+
+      // Robots on this node are distributed to child ports proportionally to the boundary numbers
+      let robotIndex = 0
+      robotsToEachChildPort.forEach((count, childPortIndex) => {
+        // Slice robotsOnNode to get robots for this child port
+        const robotsForChildPort = robotsOnNode.slice(robotIndex, count + robotIndex)
+        robotsForChildPort.forEach((robot) => {
+          // Store planned robot move
+          plannedPorts[robot.id] = this.childPorts[nodeWithRobot][childPortIndex]
+        })
+        robotIndex += count
+      })
+    })
+
+    // Move all robots
+    this.robots.forEach((robot) => {
+      if (plannedPorts[robot.id] === -1) {
+        return // Continue forEach loop -- skip robots that are not moving
+      }
+
+      // Check if the robot can move to the planned port
+      if (this.graph.getEdgeWeightFromPort(robot.currentNode, plannedPorts[robot.id]) < 0) {
+        // Mark the intended port as negative to indicate that it is not traversable
+        robot.portsTraversed.push(-plannedPorts[robot.id] - 100) // -100 to avoid collisions with other negative ports
+        // Do nothing this step for this robot -- it will try again next step
+        return // Continue forEach loop
+      }
+
+      // Store the current node as the parent of the planned node
+      const plannedNode = this.graph.getAdjacentNodeFromPort(robot.currentNode, plannedPorts[robot.id])
+      this.parentPorts[plannedNode] = this.graph.getPortFromAdjacentNode(plannedNode, robot.currentNode)
+
+      // Compute the child ports of the new node, if they have not already been computed
+      if (!this.childPorts[plannedNode]) {
+        this.childPorts[plannedNode] = this.graph.getChildPorts(plannedNode, this.parentPorts[plannedNode])
+        // Only keep child ports that have not already been visited (to avoid multiple paths to the same node)
+        this.childPorts[plannedNode].forEach((childPort) => {
+          const childNode = this.graph.getAdjacentNodeFromPort(plannedNode, childPort)
+          if (this.visitedNodes[childNode]) {
+            this.childPorts[plannedNode] = this.childPorts[plannedNode].filter((port) => port !== childPort)
+          }
         })
       }
 
-      // Prepare second notifying robot
-      waitingRobots.forEach((robot) => {
-        robot.state = 'notifying'
-      })
+      robot.currentNode = plannedNode
+      robot.portsTraversed.push(plannedPorts[robot.id])
 
-      // if (exploringRobots.length >= 2 && )
+      // Mark visited nodes
+      if (!this.visitedNodes[robot.currentNode]) {
+        this.visitedNodes[robot.currentNode] = true
+      }
     })
+
+    // Generate new robots
+    this.createRobots(this.numberOfRobotsToGenerate, 0)
+
+    ++this.stepNumber
   }
 
   run () {
@@ -374,7 +435,87 @@ export class TreeExplorationWithLocalCommunicationRobotCoordinator extends Robot
       this.step()
     }
   }
+
+  // Compute the number of boundary nodes on a port
+  computeBoundaryNodesOnPort (nodeId: number, port: number): number {
+    // Find the root of the subtree by looking down the port
+    const subtreeRoot = this.graph.getAdjacentNodeFromPort(nodeId, port)
+
+    if (!this.visitedNodes[nodeId] || !this.visitedNodes[subtreeRoot]) {
+      return 1
+    }
+
+    // If the subtreeRoot has been visited, then its childPorts have already been computed
+    // Add up boundary nodes in the subtree
+    let sum = 0
+    this.childPorts[subtreeRoot].forEach((childPort) => {
+      sum += this.computeBoundaryNodesOnPort(subtreeRoot, childPort)
+    })
+
+    return sum
+  }
 }
+
+// // A robot coordinator that implements fast collaborative exploration with local communication
+// export class TreeExplorationWithLocalCommunicationRobotCoordinator extends RobotCoordinator {
+//   robots: LocalCommunicationRobot[] = []
+
+//   // Number of robots to create each step
+//   numberOfRobots = 0
+
+//   createRobots (numberOfRobots: number, startingNode: number): void {
+//     super.createRobots(numberOfRobots, startingNode)
+
+//     // numberOfRobots is updated here to maintain consistent function calls with other robot coordinators
+//     this.numberOfRobots = numberOfRobots
+//   }
+
+//   initializeRobot (robot: LocalCommunicationRobot): void {
+//     robot.state = 'exploring'
+//   }
+
+//   step () {
+//     // Get indices of visited nodes
+//     const visitedNodeIds = this.visitedNodes.map((visited, index) => visited ? index : -1).filter((index) => index !== -1)
+
+//     visitedNodeIds.forEach((visitedNode) => {
+//       // Get robots on this node
+//       const robotsOnNode = this.robots.filter((robot) => robot.currentNode === visitedNode)
+//       // const exploringRobots = robotsOnNode.filter((robot) => robot.state === 'exploring')
+//       const notifyingRobots = robotsOnNode.filter((robot) => robot.state === 'notifying')
+//       const waitingRobots = robotsOnNode.filter((robot) => robot.state === 'waiting to notify')
+
+//       // Check if it is a leaf node
+//       if (this.graph.getNumberOfPorts(visitedNode) === 1) { // Only the parent port
+//         // TODO: Handle leaf nodes
+//         return // Continue forEach loop
+//       }
+
+//       // For all nodes except the root, move notifying robots to the parent node
+//       if (visitedNode !== 0) { // Assumes root is always node id 0
+//         notifyingRobots.forEach((robot) => {
+//           // Assumes parent is always at port 0
+//           robot.currentNode = this.graph.getAdjacentNodeFromPort(robot.currentNode, 0)
+//           robot.portsTraversed.push(0)
+//         })
+//       }
+
+//       // Prepare second notifying robot
+//       waitingRobots.forEach((robot) => {
+//         robot.state = 'notifying'
+//       })
+
+//       // if (exploringRobots.length >= 2 && )
+//     })
+//   }
+
+//   run () {
+//     // Run until all nodes have been visited
+//     while (this.visitedNodes.includes(false)) {
+//       this.step()
+//     }
+//   }
+// }
 
 // // A robot coordinator that implements fast collaborative exploration with local communication
 // export class TreeExplorationWithLocalCommunicationRobotCoordinator extends RobotCoordinator {

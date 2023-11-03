@@ -17,7 +17,7 @@ import { provide, ref, shallowRef, triggerRef } from 'vue'
 const model = new Model()
 
 // Graph
-model.graphType = GraphType.ArbitraryTree
+model.graphType = GraphType.ErdosRenyiRandom
 model.nodeCount = 31
 model.edgeProbability = 0.1
 model.isDirected = false
@@ -29,10 +29,10 @@ model.generateGraph()
 // Visual graph
 const nodeColorScheme: 'robotCount' | 'uniform' = 'robotCount'
 const indcateVisitedNodes = true
-const layoutType = LayoutType.TreeVerticalCenter
+const layoutType = LayoutType.ForceDirected
 const showGraph = true
 const nodeLabelsAreVisible = true
-const portLabelsAreVisible = false
+const portLabelsAreVisible = true
 const graphWidth = 1000
 const graphHeight = 700
 const vng = new VisualGraph(model.graph, graphWidth, graphHeight, layoutType)
@@ -48,13 +48,13 @@ const fdCenterStrength = 0.99
 const fdAlphaMin = 0.001
 
 // Robots
-model.robotType = RobotType.TreeExplorationGlobal
+// model.robotType = RobotType.AribitraryGraphExplorationGlobal
+model.robotType = RobotType.AribitraryGraphExplorationGlobal
 model.robotCount = 10
 model.robotStartingNode = 0
 model.lambda = 5
-model.edgeSurvivalProbability = 0.5
+model.edgeSurvivalProbability = 0.8
 model.generateRobots()
-console.log('ROBOTS: ' + model.robots)
 
 // model.runRobots()
 // vng.updateEdgeWeights(model.graph.nodes)
