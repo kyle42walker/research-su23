@@ -331,8 +331,13 @@ export class ArbitraryGraphExplorationWithGlobalCommunicationRobotCoordinator ex
     // Do nothing -- no special configuration required
   }
 
-  // TODO -- if the node has been visited already, then remove it from the childPorts array of the less optimal path
   step () {
+    // Remove random edges every lambda steps by negating edge weights
+    if (this.stepNumber % this.lambda === 0) {
+      this.graphHistory.push({ stepNumber: this.stepNumber, graphNodes: this.graph.deepCopyNodes() })
+      this.graph.setRandomEdgeWeightSigns(this.edgeSurvivalProbability)
+    }
+
     // Indicies of plannedPorts correspond with robotIds in the robots array -- represents where the robot will move after all robots have finished planning
     const plannedPorts: number[] = []
 
@@ -400,7 +405,9 @@ export class ArbitraryGraphExplorationWithGlobalCommunicationRobotCoordinator ex
 
       // Store the current node as the parent of the planned node
       const plannedNode = this.graph.getAdjacentNodeFromPort(robot.currentNode, plannedPorts[robot.id])
-      this.parentPorts[plannedNode] = this.graph.getPortFromAdjacentNode(plannedNode, robot.currentNode)
+      if (this.parentPorts[plannedNode] === -1) {
+        this.parentPorts[plannedNode] = this.graph.getPortFromAdjacentNode(plannedNode, robot.currentNode)
+      }
 
       // Compute the child ports of the new node, if they have not already been computed
       if (!this.childPorts[plannedNode]) {
@@ -427,6 +434,7 @@ export class ArbitraryGraphExplorationWithGlobalCommunicationRobotCoordinator ex
     this.createRobots(this.numberOfRobotsToGenerate, 0)
 
     ++this.stepNumber
+    console.log('parentPorts: ', this.parentPorts, '\nchildPorts: ', this.childPorts)
   }
 
   run () {

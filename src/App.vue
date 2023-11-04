@@ -50,10 +50,10 @@ const fdAlphaMin = 0.001
 // Robots
 // model.robotType = RobotType.AribitraryGraphExplorationGlobal
 model.robotType = RobotType.AribitraryGraphExplorationGlobal
-model.robotCount = 10
+model.robotCount = 100
 model.robotStartingNode = 0
 model.lambda = 5
-model.edgeSurvivalProbability = 0.8
+model.edgeSurvivalProbability = 0.5
 model.generateRobots()
 
 // model.runRobots()
